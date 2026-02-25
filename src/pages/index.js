@@ -13,7 +13,7 @@ const Dashboard = () => {
     <div className="max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen font-sans">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-black flex items-center">
-          <span className="text-blue-600 mr-2">🏆</span> Badminton App
+          <span className="text-blue-600 mr-2">🏆</span> ตำ 5 รส
         </h1>
         <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm bg-gray-200">
            <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">👤</div>
