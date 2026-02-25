@@ -1,62 +1,56 @@
 import React from 'react';
 
-const RankingPage = () => {
-  // ข้อมูลสมมติที่อ้างอิงจากรูปโปรไฟล์ของคุณ (กิ๊ก)
-  const rankingList = [
-    { id: 1, name: "กิ๊ก", level: "ม.ต้น", win: 2, winRate: "28.6%", color: "bg-blue-500", icon: "🧑" },
-    { id: 2, name: "พี่บอล", level: "ประถม", win: 5, winRate: "60.0%", color: "bg-green-500", icon: "👦" },
-    { id: 3, name: "ตั้ว", level: "เบบี้", win: 1, winRate: "15.0%", color: "bg-orange-400", icon: "👶" },
+const RankingBoard = () => {
+  // สมมติข้อมูลอันดับที่ดึงมาจาก Database
+  const rankings = [
+    { rank: 1, name: "พี่บอล", level: "หน้าบ้าน", win: 15, lose: 2, winRate: "88%", color: "bg-orange-500" },
+    { rank: 2, name: "เมย์", level: "เบา", win: 12, lose: 4, winRate: "75%", color: "bg-green-500" },
+    { rank: 3, name: "กิ๊ก", level: "เบา", win: 10, lose: 5, winRate: "66%", color: "bg-green-500" },
+    { rank: 4, name: "ตั้ว", level: "หน้าบ้าน", win: 8, lose: 6, winRate: "57%", color: "bg-orange-500" },
   ];
 
   return (
-    <div className="max-w-md mx-auto p-4 bg-gray-50 min-h-screen">
+    <div className="max-w-md mx-auto p-4 bg-white min-h-screen">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-black italic text-gray-800">RANKING 🏆</h1>
-        <span className="text-xs font-bold text-gray-400">ก๊วนสุขนิยม</span>
+        <h2 className="text-3xl font-black text-gray-800">อันดับก๊วน 🏆</h2>
+        <span className="bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full">อัปเดตล่าสุดวันนี้</span>
       </div>
 
       <div className="space-y-3">
-        {rankingList.map((player, index) => (
+        {rankings.map((player) => (
           <div 
-            key={player.id} 
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center"
+            key={player.rank}
+            className={`flex items-center p-4 rounded-2xl border-2 transition-all hover:border-gray-300 ${player.rank <= 3 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}
           >
-            {/* อันดับ */}
-            <div className="w-10 text-xl font-black text-blue-600 italic">
-              #{index + 1}
+            {/* เลขอันดับ */}
+            <div className="w-8 text-2xl font-black text-gray-400 mr-2">
+              {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : player.rank}
             </div>
 
-            {/* ไอคอนระดับมือตามรูปภาพก๊วน */}
-            <div className={`w-12 h-12 ${player.color} rounded-xl flex items-center justify-center text-2xl mr-4`}>
-              {player.icon}
-            </div>
-
-            {/* ข้อมูลผู้เล่น */}
+            {/* โปรไฟล์และระดับมือ */}
             <div className="flex-1">
-              <div className="font-bold text-gray-800">{player.name}</div>
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                ระดับ: {player.level}
+              <div className="flex items-center">
+                <span className="font-bold text-lg mr-2">{player.name}</span>
+                <span className={`w-3 h-3 rounded-full ${player.color}`}></span>
               </div>
+              <p className="text-xs text-gray-500 uppercase font-bold">{player.level}</p>
             </div>
 
-            {/* สถิติอัตราชนะ */}
+            {/* สถิติชนะ/แพ้ */}
             <div className="text-right">
-              <div className="text-sm font-black text-green-600">{player.winRate}</div>
-              <div className="text-[10px] text-gray-400 font-bold">WIN RATE</div>
+              <div className="text-sm font-bold text-blue-600">ชนะ {player.win}</div>
+              <div className="text-xs text-gray-400 font-medium">Win Rate: {player.winRate}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ปุ่มสั่นแจ้งเตือนเมื่อดูอันดับ (เพื่อความสนุกของคนหูหนวก) */}
-      <button 
-        onClick={() => window.navigator.vibrate([100, 50, 100])}
-        className="w-full mt-8 py-4 bg-gray-800 text-white font-black rounded-2xl shadow-lg active:scale-95 transition-all"
-      >
-        📳 สั่นเพื่อฉลองอันดับ!
-      </button>
+      {/* คำแนะนำท้ายหน้าจอ */}
+      <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center">
+        <p className="text-gray-500 text-sm italic">ยิ่งชนะมาก อันดับยิ่งสูงขึ้น! สู้ๆ นะทุกคน 🏸</p>
+      </div>
     </div>
   );
 };
 
-export default RankingPage;
+export default RankingBoard;
