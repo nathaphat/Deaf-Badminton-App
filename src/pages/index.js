@@ -17,10 +17,17 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             {/* แสดงรูปโปรไฟล์จาก LINE */}
             <img 
-              src={session.user.image || "/default-avatar.png"} 
-              className="w-10 h-10 rounded-full border" 
-              alt="profile"
-            />
+            src={session.user.image} 
+            style={{ 
+              width: '40px',      // บังคับกว้าง 40 พิกเซล
+              height: '40px',     // บังคับสูง 40 พิกเซล
+              borderRadius: '50%', // ทำเป็นวงกลม
+              objectFit: 'cover',  // ให้รูปตัดพอดีวงกลม ไม่เบี้ยว
+              border: '2px solid white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }} 
+            alt="profile"
+          />
             <p className="font-bold text-gray-700">ยินดีต้อนรับคุณ {session.user.name}</p>
           </div>
           <button 
