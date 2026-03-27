@@ -1,4 +1,4 @@
-import { useSession, signIn } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react"
 import { useState, useEffect } from 'react'
 import { supabase } from '../logic/supabaseClient'
 
