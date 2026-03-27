@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { signIn, signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 const ProfileLevel = () => {
+  const { data: session } = useSession()
   const [selectedLevel, setSelectedLevel] = useState('หน้าบ้าน');
 
   const levels = [
