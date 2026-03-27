@@ -4,7 +4,7 @@ import React from 'react';
 const CheckInPage = () => {
   return (
     <div className="p-10 text-center">
-      <h1 className="text-2xl font-bold">ระบบเช็คอินก๊วนสุขนิยม 🏸</h1>
+      <h1 className="text-2xl font-bold">ระบบเช็คอิน 🏸</h1>
       <p>กำลังเตรียมพร้อมใช้งาน...</p>
     </div>
   );
