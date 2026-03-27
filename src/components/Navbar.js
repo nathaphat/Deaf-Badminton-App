@@ -18,6 +18,7 @@ const Navbar = () => {
         <Link href="/" style={{ color: 'white', textDecoration: 'none' }}>หน้าหลัก</Link>
         <Link href="/checkin" style={{ color: 'white', textDecoration: 'none' }}>เช็คอิน</Link>
         <Link href="/finance" style={{ color: 'white', textDecoration: 'none' }}>การเงิน</Link>
+        <Link href="/profile" style={{ color: 'white', textDecoration: 'none' }}>profile</Link>
       </div>
     </nav>
   );
