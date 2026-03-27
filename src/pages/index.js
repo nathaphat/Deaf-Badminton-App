@@ -76,10 +76,76 @@ export default function Home() {
 
   // 2. ถ้า Login แล้ว -> โชว์หน้า Dashboard (สถิติ)
   return (
-    <div>
-       {/* เอาโค้ด Dashboard + สถิติ ที่เราคุยกันตะกี้มาวางตรงนี้ทั้งหมด */}
-       {/* ทั้งส่วน Profile Image, สถิติแมตช์, และประวัติ Series */}
-       <p className="text-center text-xs text-gray-400 mt-10">My app by Kik</p>
+    <div className="max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen font-sans">
+      
+      {/* ส่วนหัวแสดงโปรไฟล์และปุ่มออก */}
+      <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm mb-6 border border-gray-100">
+        <div className="flex items-center gap-3">
+          <img 
+            src={session.user.image || "/default-avatar.png"} 
+            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+            alt="profile"
+          />
+          <div>
+            <p className="font-black text-gray-800 text-sm">ยินดีต้อนรับ</p>
+            <p className="text-xs text-gray-500">{session.user.name}</p>
+          </div>
+        </div>
+        <button 
+          onClick={() => signOut()} 
+          className="text-xs font-bold text-red-500 bg-red-50 px-3 py-2 rounded-xl hover:bg-red-100 transition"
+        >
+          ออกจากระบบ
+        </button>
+      </div>
+
+      <h1 className="text-xl font-black mb-6 flex items-center">
+        <span className="text-blue-600 mr-2">🏆</span> ตำ 5 รส Dashboard
+      </h1>
+
+      {/* สถิติหลัก (ใช้ข้อมูลจริงจาก State: stats) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">แมตช์ทั้งหมด</p>
+          <p className="text-2xl font-black">{stats.totalMatches}</p>
+          <span className="absolute -right-2 -bottom-2 text-blue-500 text-4xl opacity-10">🏸</span>
+        </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider text-green-600">ชนะ</p>
+          <p className="text-2xl font-black text-green-600">{stats.win}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider text-blue-500">อัตราชนะ</p>
+          <p className="text-2xl font-black text-blue-500">{stats.winRate}</p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider text-red-500">แพ้</p>
+          <p className="text-2xl font-black text-red-500">{stats.lose}</p>
+        </div>
+      </div>
+
+      {/* ประวัติ Series แบบ Progress Bar */}
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-purple-100 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-gray-800">สรุปภาพรวม Series</h3>
+          <span className="text-[10px] bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-black">
+            {stats.totalMatches > 0 ? 'กำลังประมวลผล' : 'ยังไม่มีข้อมูล'}
+          </span>
+        </div>
+        <div className="w-full bg-gray-100 h-3 rounded-full mb-6 overflow-hidden flex">
+           {/* แถบสีแสดงสัดส่วน ชนะ-เสมอ-แพ้ */}
+           <div style={{ width: stats.winRate }} className="bg-green-500 h-full"></div>
+           <div style={{ width: `${(stats.draw/stats.totalMatches)*100}%` }} className="bg-yellow-400 h-full"></div>
+        </div>
+        <div className="grid grid-cols-4 text-center">
+          <div><p className="text-green-600 font-black">{stats.win}</p><p className="text-[10px] text-gray-400 font-bold uppercase">WIN</p></div>
+          <div><p className="text-yellow-600 font-black">{stats.draw}</p><p className="text-[10px] text-gray-400 font-bold uppercase">DRAW</p></div>
+          <div><p className="text-red-600 font-black">{stats.lose}</p><p className="text-[10px] text-gray-400 font-bold uppercase">LOSE</p></div>
+          <div><p className="text-blue-600 font-black">{(stats.win * 3) + stats.draw}</p><p className="text-[10px] text-gray-400 font-bold uppercase">POINTS</p></div>
+        </div>
+      </div>
+
+      <p className="text-center text-xs text-gray-400 mt-10 mb-6 italic">My app by Kik</p>
     </div>
   )
 }
