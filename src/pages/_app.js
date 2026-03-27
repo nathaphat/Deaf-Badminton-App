@@ -1,5 +1,4 @@
 import Navbar from '../components/Navbar';
-import '../styles/globals.css'; // ตรวจสอบว่ามีไฟล์นี้อยู่ในโปรเจกต์ไหม
 
 function MyApp({ Component, pageProps }) {
   return (
