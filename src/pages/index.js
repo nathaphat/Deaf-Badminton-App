@@ -1,119 +1,32 @@
-import React from 'react';
-import { signIn, signOut, useSession } from "next-auth/react"
-const Dashboard = () => {
+import { useSession, signIn } from "next-auth/react"
+import { useState, useEffect } from 'react'
+import { supabase } from '../logic/supabaseClient'
+
+export default function Home() {
   const { data: session } = useSession()
-  const stats = {
-    totalMatches: 7,
-    win: 2,
-    winRate: "28.6%",
-    draw: 1,
-    lose: 4
-  };
-  if (session) {
+
+  // 1. ถ้ายังไม่ได้ Login -> โชว์หน้าเขียวๆ มีปุ่ม LINE Login
+  if (!session) {
     return (
-      <> {/* ใช้ Fragment หุ้มก้อนบนและล่างเข้าด้วยกัน */}
-        {/* ส่วนแสดงสถานะการล็อกอินด้านบน */}
-        <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm mb-4 border border-gray-100">
-          <div className="flex items-center gap-3">
-            {/* แสดงรูปโปรไฟล์จาก LINE */}
-            <img 
-            src={session.user.image} 
-            style={{ 
-              width: '40px',      // บังคับกว้าง 40 พิกเซล
-              height: '40px',     // บังคับสูง 40 พิกเซล
-              borderRadius: '50%', // ทำเป็นวงกลม
-              objectFit: 'cover',  // ให้รูปตัดพอดีวงกลม ไม่เบี้ยว
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }} 
-            alt="profile"
-          />
-            <p className="font-bold text-gray-700">ยินดีต้อนรับคุณ {session.user.name}</p>
-          </div>
-          <button 
-            onClick={() => signOut()} 
-            className="bg-red-50 text-red-500 text-xs px-3 py-2 rounded-xl font-bold hover:bg-red-100 transition"
-          >
-            ออกจากระบบ
-          </button>
-        </div>
-
-        {/* ส่วน Dashboard เดิมของคุณ */}
-        <div className="max-w-4xl mx-auto p-4 bg-gray-50 min-h-screen font-sans">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-xl font-black flex items-center">
-              <span className="text-blue-600 mr-2">🏆</span> ตำ 5 รส
-            </h1>
-          </div>
-
-          <h2 className="text-2xl font-black mb-4 text-gray-800">โปรไฟล์ผู้เล่น</h2>
-
-          {/* สถิติหลัก */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
-              <p className="text-gray-500 text-[10px] font-bold uppercase">แมตช์ทั้งหมด</p>
-              <p className="text-2xl font-black">{stats.totalMatches}</p>
-              <span className="absolute -right-1 -bottom-1 text-yellow-500 text-3xl opacity-20">🏆</span>
-            </div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-[10px] font-bold uppercase">ชนะ</p>
-              <p className="text-2xl font-black text-green-600">{stats.win}</p>
-            </div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-[10px] font-bold uppercase">อัตราชนะ</p>
-              <p className="text-2xl font-black text-green-500">{stats.winRate}</p>
-            </div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-[10px] font-bold uppercase">แพ้</p>
-              <p className="text-2xl font-black text-red-600">{stats.lose}</p>
-            </div>
-          </div>
-
-          {/* ประวัติ Series */}
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-purple-100 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800">ประวัติ Series</h3>
-              <span className="text-[10px] bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-black">กำลังดำเนินการ</span>
-            </div>
-            <div className="w-full bg-gray-100 h-3 rounded-full mb-6 overflow-hidden">
-              <div className="bg-purple-500 h-full w-[70%] rounded-full"></div>
-            </div>
-            <div className="grid grid-cols-4 text-center">
-              <div><p className="text-green-600 font-black">{stats.win}</p><p className="text-[10px] text-gray-400 font-bold">ชนะ</p></div>
-              <div><p className="text-yellow-600 font-black">{stats.draw}</p><p className="text-[10px] text-gray-400 font-bold">เสมอ</p></div>
-              <div><p className="text-red-600 font-black">{stats.lose}</p><p className="text-[10px] text-gray-400 font-bold">แพ้</p></div>
-              <div><p className="text-blue-600 font-black">25</p><p className="text-[10px] text-gray-400 font-bold">คะแนน</p></div>
-            </div>
-          </div>
-
-          {/* ผลงาน 30 วันล่าสุด */}
-          <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-50">
-            <h3 className="font-bold mb-4 px-2 text-gray-700">ผลงาน 30 วันล่าสุด</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-2xl transition-all border border-transparent hover:border-gray-100">
-                <span className="text-sm font-bold text-gray-600">17/2/2569</span>
-                <div className="flex gap-2">
-                  <span className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-lg font-bold">2 ชนะ</span>
-                  <span className="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded-lg font-bold">1 เสมอ</span>
-                  <span className="bg-red-100 text-red-700 text-[10px] px-2 py-1 rounded-lg font-bold">0 แพ้</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800">Deaf Badminton Thai</h1>
+        <button 
+          onClick={() => signIn('line')}
+          className="bg-[#00B900] text-white px-8 py-3 rounded-full font-black shadow-lg hover:scale-105 transition"
+        >
+          LINE Login เพื่อดูโปรไฟล์
+        </button>
+        <p className="mt-4 text-gray-400 text-sm italic">Developing 🔵</p>
+      </div>
     )
   }
+
+  // 2. ถ้า Login แล้ว -> โชว์หน้า Dashboard (สถิติ)
   return (
-    <div className="text-center">
-      <button 
-        onClick={() => signIn('line')} 
-        className="bg-[#00B900] text-white px-4 py-2 rounded-lg font-bold"
-      >
-        LINE Login
-      </button>
+    <div>
+       {/* เอาโค้ด Dashboard + สถิติ ที่เราคุยกันตะกี้มาวางตรงนี้ทั้งหมด */}
+       {/* ทั้งส่วน Profile Image, สถิติแมตช์, และประวัติ Series */}
+       <p className="text-center text-xs text-gray-400 mt-10">My app by Kik</p>
     </div>
   )
-};
-
-export default Dashboard;
+}
