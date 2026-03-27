@@ -1,14 +1,14 @@
-import Navbar from '../components/Navbar'; // Import เข้ามา
-import '../styles/globals.css'; // ไฟล์ CSS ของคุณ
+import Navbar from '../components/Navbar';
+import '../styles/globals.css'; // ตรวจสอบว่ามีไฟล์นี้อยู่ในโปรเจกต์ไหม
 
 function MyApp({ Component, pageProps }) {
   return (
-    <>
-      <Navbar /> {/* วางไว้ตรงนี้ เพื่อให้โผล่ทุกหน้า */}
-      <main className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="max-w-4xl mx-auto p-4">
         <Component {...pageProps} />
       </main>
-    </>
+    </div>
   );
 }
 
