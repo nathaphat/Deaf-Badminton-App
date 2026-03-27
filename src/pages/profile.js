@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useSession } from "next-auth/react"
 const ProfileLevel = () => {
-  const { data: session } = useSession()
+
   const [selectedLevel, setSelectedLevel] = useState('หน้าบ้าน');
 
   const levels = [
@@ -13,22 +12,6 @@ const ProfileLevel = () => {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
-        <div className="flex items-center gap-3">
-            {/* แสดงรูปโปรไฟล์จาก LINE */}
-            <img 
-            src={session.user.image} 
-            style={{ 
-              width: '40px',      // บังคับกว้าง 40 พิกเซล
-              height: '40px',     // บังคับสูง 40 พิกเซล
-              borderRadius: '50%', // ทำเป็นวงกลม
-              objectFit: 'cover',  // ให้รูปตัดพอดีวงกลม ไม่เบี้ยว
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }} 
-            alt="profile"
-          />
-          <p className="font-bold text-gray-700"> {session.user.name}</p>
-        </div>
       <h2 className="text-2xl font-bold mb-4">ตั้งค่าระดับมือ</h2>
       
       <div className="grid grid-cols-1 gap-4">
