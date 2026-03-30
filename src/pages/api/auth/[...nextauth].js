@@ -13,6 +13,42 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account.provider === "line") {
+        try {
+          // 1. ลองหาดูว่ามี user_line_id นี้ในตาราง profiles หรือยัง
+          const { data: existingProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_line_id', user.id) // user.id ตรงนี้คือ ID จาก LINE
+            .single();
+    
+          if (existingProfile) {
+            // 2. ถ้ามีแล้ว -> อัปเดตข้อมูล ชื่อ และ รูป
+            await supabase
+              .from('profiles')
+              .update({ 
+                display_name: user.name, 
+                avatar_url: user.image,
+                updated_at: new Date()
+              })
+              .eq('user_line_id', user.id);
+          } else {
+            // 3. ถ้ายังไม่มี -> สร้างแถวใหม่ (id จะถูกเจนเป็น uuid ให้อัตโนมัติโดย Supabase)
+            await supabase
+              .from('profiles')
+              .insert([{ 
+                user_line_id: user.id, 
+                display_name: user.name, 
+                avatar_url: user.image 
+              }]);
+          }
+        } catch (err) {
+          console.error("❌ Profile Sync Error:", err.message);
+        }
+      }
+      return true;
+    },
+    async signInxx01({ user, account, profile }) {
+      if (account.provider === "line") {
         const { data, error } = await supabase
           .from('profiles')
           .upsert({ 
