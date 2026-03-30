@@ -11,7 +11,32 @@ export const authOptions = {
   ],
   // เมื่อล็อกอินเสร็จ จะให้เก็บข้อมูลไว้ใน Session
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
+      if (account.provider === "line") {
+        console.log("LINE User ID:", user.id);
+        console.log("LINE User Name:", user.name);
+        // ลองส่งแค่ user_line_id อย่างเดียวดูก่อนเพื่อทดสอบ
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              user_line_id: user.id, 
+              display_name: user.name || 'No Name',
+              avatar_url: user.image || ''
+            }
+          ]);
+    
+        if (error) {
+          // บรรทัดนี้จะพ่น Error จริงๆ ออกมาใน Vercel Logs
+          console.log("❌ Supabase Insert Error:", error.message);
+          console.log("❌ Error Code:", error.code);
+        } else {
+          console.log("✅ Insert Success!");
+        }
+      }
+      return true;
+    },
+    async signInxx02({ user, account, profile }) {
       console.log("LINE User ID:", user.id);
       console.log("LINE User Name:", user.name);
       if (account.provider === "line") {
