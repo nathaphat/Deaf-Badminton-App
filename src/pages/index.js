@@ -61,6 +61,7 @@ export default function Home() {
   // 1. ถ้ายังไม่ได้ Login -> โชว์หน้าเขียวๆ มีปุ่ม LINE Login
   if (!session) {
     return (
+      <button className="bg-red-500 text-white p-10 text-5xl">TEST TAILWIND</button>
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
         <h1 className="text-2xl font-bold mb-6 text-gray-800">Deaf Badminton Thai</h1>
         <button 
