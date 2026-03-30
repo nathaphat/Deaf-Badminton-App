@@ -12,6 +12,7 @@ export const authOptions = {
   // เมื่อล็อกอินเสร็จ จะให้เก็บข้อมูลไว้ใน Session
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log("LINE User ID:", user.id); // ดูใน Logs ว่า ID มาไหม
       if (account.provider === "line") {
         try {
           // 1. ลองหาดูว่ามี user_line_id นี้ในตาราง profiles หรือยัง
@@ -60,6 +61,7 @@ export const authOptions = {
 
         if (error) {
           console.error("Error saving profile:", error)
+          console.error("Supabase Error Details:", JSON.stringify(error));
           return false // ถ้าบันทึกไม่ได้ จะไม่ให้ Login เข้าเครื่อง
         }
       }
