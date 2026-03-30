@@ -14,6 +14,7 @@ export const authOptions = {
     async signIn({ user, account, profile }) {
       console.log("LINE User ID:", user.id); // ดูใน Logs ว่า ID มาไหม
       if (account.provider === "line") {
+        console.log("account.provider is line"); 
         try {
           // 1. ลองหาดูว่ามี user_line_id นี้ในตาราง profiles หรือยัง
           const { data: existingProfile, error: fetchError } = await supabase
@@ -45,6 +46,8 @@ export const authOptions = {
         } catch (err) {
           console.error("❌ Profile Sync Error:", err.message);
         }
+      }else{
+         console.log("account.provider is no line."); 
       }
       return true;
     },
