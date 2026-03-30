@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // คลุมทุกอย่างใน src
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}", // คลุมทุกอย่างใน pages (เผื่อไว้)
-    "./components/**/*.{js,ts,jsx,tsx,mdx}", // คลุมทุกอย่างใน components (เผื่อไว้)
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",      // 1. ชี้ไปที่โฟลเดอร์ pages นอก src
+    "./components/**/*.{js,ts,jsx,tsx,mdx}", // 2. ชี้ไปที่โฟลเดอร์ components นอก src
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",        // 3. กวาดใน src ไว้ด้วยเผื่อมีไฟล์อื่น
+    "./styles/**/*.css",                     // 4. กวาดไฟล์ css
   ],
   theme: {
     extend: {},
