@@ -2,15 +2,7 @@ import Link from 'next/link';
 
 const Navbar = () => {
   return (
-    <nav style={{
-      backgroundColor: '#2563eb',
-      color: 'white',
-      padding: '1rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
+    <nav className="bg-blue-600">
       <Link href="/" style={{ color: 'white', fontWeight: 'bold', textDecoration: 'none', fontSize: '1.2rem' }}>
         🏸 Deaf Badminton
       </Link>
