@@ -61,7 +61,6 @@ export default function Home() {
   // 1. ถ้ายังไม่ได้ Login -> โชว์หน้าเขียวๆ มีปุ่ม LINE Login
   if (!session) {
     return (
-      <button className="bg-red-500 text-white p-10 text-5xl">TEST TAILWIND</button>
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
         <h1 className="text-2xl font-bold mb-6 text-gray-800">Deaf Badminton Thai</h1>
         <button 
@@ -77,6 +76,7 @@ export default function Home() {
 
   // 2. ถ้า Login แล้ว -> โชว์หน้า Dashboard (สถิติ)
   return (
+     <button className="bg-red-500 text-white p-10 text-5xl">TEST TAILWIND</button>
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
       {/* 1. Top Navigation & Profile */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[40px] shadow-sm border-b border-gray-100">
