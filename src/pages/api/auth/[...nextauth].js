@@ -12,7 +12,8 @@ export const authOptions = {
   // เมื่อล็อกอินเสร็จ จะให้เก็บข้อมูลไว้ใน Session
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("LINE User ID:", user.id); // ดูใน Logs ว่า ID มาไหม
+      console.log("LINE User ID:", user.id);
+      console.log("LINE User Name:", user.name);
       if (account.provider === "line") {
         console.log("account.provider is line"); 
         try {
