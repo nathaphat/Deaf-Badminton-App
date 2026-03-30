@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
+    "./src/**/*.{js,ts,jsx,tsx}",
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,11 +10,10 @@ module.exports = {
     extend: {
       colors: {
         // กำหนดสีตามระดับมือในรูปภาพก๊วนสุขนิยม
-        'level-baby': '#f97316',    // สีส้ม (เบบี้)
-        'level-primary': '#22c55e', // สีเขียว (ประถม)
-        'level-junior': '#3b82f6',  // สีน้ำเงิน (ม.ต้น)
-        'level-senior': '#ef4444',  // สีแดง (ม.ปลาย/หนัก)
-        'brand-purple': '#a855f7',  // สีม่วงของแถบ Series
+        'level-baby': '#f97316',    // สีส้ม มือหน้าบ้าน
+        'level-primary': '#22c55e', // สีเขียว มือเบา
+        'level-junior': '#3b82f6',  // สีน้ำเงิน มือกลาง
+        'level-senior': '#ef4444',  // สีแดง มือหนัก
       },
     },
   },
