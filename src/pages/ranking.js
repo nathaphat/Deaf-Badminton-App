@@ -52,5 +52,4 @@ const RankingBoard = () => {
     </div>
   );
 };
-
 export default RankingBoard;
