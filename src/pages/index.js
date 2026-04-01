@@ -100,12 +100,8 @@ return (
     </div>
 
     {/* ปุ่มทดสอบ (เอาออกได้เมื่อสวยแล้ว) */}
-    <button className="bg-red-500 text-white p-4 rounded-xl mt-4">TEST TAILWIND</button>
-    <button 
-      style={{ border: '10px solid blue' }} 
-      className="bg-red-500 text-white p-10 text-5xl"
-    >
-    TEST TAILWIND
+    <button className="bg-red-500 text-white p-10 text-5xl rounded-2xl">
+      TEST TAILWIND
     </button>
   </div>
 )
