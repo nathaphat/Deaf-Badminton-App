@@ -6,5 +6,4 @@ const FinancePage = () => {
     </div>
   );
 };
-
 export default FinancePage; // ต้องมีบรรทัดนี้เสมอ!
