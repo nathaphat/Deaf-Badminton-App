@@ -56,5 +56,4 @@ const MemberManagement = () => {
     </div>
   );
 };
-
 export default MemberManagement;
