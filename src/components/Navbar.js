@@ -23,7 +23,7 @@ const Navbar = () => {
           <NavLink href="/profile" label="โปรไฟล์" isProfile />
         </div>
 
-        {/* Mobile Menu Button (Icon Only for now) */}
+        {/* Mobile Menu Button */}
         <div className="md:hidden">
           <button className="p-2 text-slate-600">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,8 +36,8 @@ const Navbar = () => {
   );
 };
 
-// Sub-component เพื่อความสะอาดของโค้ด
-const NavLink = ({ href, label, isProfile = false }: { href: string; label: string; isProfile?: boolean }) => (
+// แก้ไขตรงนี้: ลบ Type definitions ออกเพื่อให้รันใน JavaScript ปกติได้
+const NavLink = ({ href, label, isProfile = false }) => (
   <Link 
     href={href} 
     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 
