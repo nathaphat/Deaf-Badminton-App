@@ -99,10 +99,6 @@ return (
       </div>
     </div>
 
-    {/* ปุ่มทดสอบ (เอาออกได้เมื่อสวยแล้ว) */}
-    <button className="bg-red-500 text-white p-10 text-5xl rounded-2xl">
-      TEST TAILWIND
-    </button>
   </div>
 )
 }
