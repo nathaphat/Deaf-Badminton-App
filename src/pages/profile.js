@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-const ProfileLevel = () => {
 
+const ProfileLevel = () => {
   const [selectedLevel, setSelectedLevel] = useState('หน้าบ้าน');
 
   const levels = [
@@ -12,34 +12,52 @@ const ProfileLevel = () => {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4">ตั้งค่าระดับมือ</h2>
+      <div className="text-center mb-6">
+        <h2 className="text-3xl font-extrabold text-black mb-2">ตั้งค่าระดับมือ</h2>
+        <p className="text-sm text-gray-600">เลือกระดับฝีมือการเล่นของคุณ</p>
+      </div>
       
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {levels.map((level) => (
           <button
             key={level.id}
             onClick={() => setSelectedLevel(level.name)}
-            className={`flex items-center p-4 rounded-lg border-2 transition-all ${
-              selectedLevel === level.name ? 'border-black scale-105 shadow-md' : 'border-gray-100'
+            className={`group flex flex-col items-center justify-between p-5 rounded-3xl border-2 transition-all duration-300 h-full text-center ${
+              selectedLevel === level.name 
+                ? 'border-green-500 bg-green-50 scale-105 shadow-md' 
+                ? 'border-green-500 bg-green-50 scale-105 shadow-md' 
+                : 'border-gray-200 bg-white hover:border-green-300'
             }`}
           >
-            <div className={`w-12 h-12 rounded-full ${level.color} flex items-center justify-center text-white mr-4`}>
-              🏸
+            <div className="flex flex-col items-center">
+              <div className={`w-16 h-16 rounded-full ${level.color} flex items-center justify-center text-white mb-4 shadow-inner text-2xl`}>
+                🏸
+              </div>
+              
+              <div className="mb-2">
+                <div className="font-extrabold text-xl text-black">{level.name}</div>
+                <div className="text-gray-500 text-xs px-2">{level.desc}</div>
+              </div>
             </div>
-            <div className="text-left">
-              <div className="font-bold text-lg">{level.name}</div>
-              <div className="text-gray-500 text-sm">{level.desc}</div>
+
+            <div className="mt-auto pt-2 w-full flex justify-center">
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                selectedLevel === level.name ? 'border-green-500 bg-green-500' : 'border-gray-300'
+              }`}>
+                {selectedLevel === level.name && (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
             </div>
-            {selectedLevel === level.name && (
-              <div className="ml-auto text-green-500 font-bold">✅</div>
-            )}
           </button>
         ))}
       </div>
 
-      <button className="w-full mt-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
+      <button className="w-full mt-10 py-3.5 bg-green-500 text-white font-extrabold rounded-full hover:bg-green-600 transition-colors shadow-md text-lg">
         บันทึกข้อมูล
-      </button>
+      </div>
     </div>
   );
 };
