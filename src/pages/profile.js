@@ -11,10 +11,10 @@ const ProfileLevel = () => {
   ];
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-extrabold text-black mb-2">ตั้งค่าระดับมือ</h2>
-        <p className="text-sm text-gray-600">เลือกระดับฝีมือการเล่นของคุณ</p>
+    <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-black text-gray-800 mb-1">ตั้งค่าระดับมือ</h2>
+        <p className="text-xs text-gray-500">เลือกความสามารถที่ตรงกับคุณที่สุด</p>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -22,42 +22,38 @@ const ProfileLevel = () => {
           <button
             key={level.id}
             onClick={() => setSelectedLevel(level.name)}
-            className={`group flex flex-col items-center justify-between p-5 rounded-3xl border-2 transition-all duration-300 h-full text-center ${
+            className={`flex flex-col items-center p-5 rounded-[2rem] border-2 transition-all duration-300 ${
               selectedLevel === level.name 
                 ? 'border-green-500 bg-green-50 scale-105 shadow-md' 
-                ? 'border-green-500 bg-green-50 scale-105 shadow-md' 
-                : 'border-gray-200 bg-white hover:border-green-300'
+                : 'border-gray-100 bg-white hover:border-gray-200'
             }`}
           >
-            <div className="flex flex-col items-center">
-              <div className={`w-16 h-16 rounded-full ${level.color} flex items-center justify-center text-white mb-4 shadow-inner text-2xl`}>
-                🏸
-              </div>
-              
-              <div className="mb-2">
-                <div className="font-extrabold text-xl text-black">{level.name}</div>
-                <div className="text-gray-500 text-xs px-2">{level.desc}</div>
-              </div>
+            <div className={`w-14 h-14 rounded-full ${level.color} flex items-center justify-center text-white mb-3 shadow-lg text-xl`}>
+              🏸
+            </div>
+            
+            <div className="text-center mb-3">
+              <div className="font-bold text-gray-800">{level.name}</div>
+              <div className="text-[10px] text-gray-400 leading-tight">{level.desc}</div>
             </div>
 
-            <div className="mt-auto pt-2 w-full flex justify-center">
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                selectedLevel === level.name ? 'border-green-500 bg-green-500' : 'border-gray-300'
-              }`}>
-                {selectedLevel === level.name && (
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
+            {/* วงกลม Checkbox ด้านล่างแบบรูปที่ 2 */}
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+              selectedLevel === level.name ? 'border-green-500 bg-green-500' : 'border-gray-300'
+            }`}>
+              {selectedLevel === level.name && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
           </button>
         ))}
       </div>
 
-      <button className="w-full mt-10 py-3.5 bg-green-500 text-white font-extrabold rounded-full hover:bg-green-600 transition-colors shadow-md text-lg">
+      <button className="w-full mt-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95">
         บันทึกข้อมูล
-      </div>
+      </button>
     </div>
   );
 };
