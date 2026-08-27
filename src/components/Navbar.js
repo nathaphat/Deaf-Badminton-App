@@ -1,6 +1,37 @@
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { supabase } from '../logic/supabaseClient';
 
 const Navbar = () => {
+  const { data: session } = useSession();
+  const [canCreateGroup, setCanCreateGroup] = useState(false);
+
+  useEffect(() => {
+    const checkGroupQuota = async () => {
+      if (session?.user?.id) {
+        try {
+          // สั่งให้นับจำนวนก๊วนที่ผู้ใช้นี้เป็นคนสร้าง
+          const { count, error } = await supabase
+            .from('daily_sessions') // เช็กชื่อตารางให้ตรงกับที่คุณใช้งานนะครับ
+            .select('*', { count: 'exact', head: true })
+            .eq('organizer_id', session.user.id);
+
+          if (error) throw error;
+
+          // ถ้าจำนวนก๊วนเป็น 0 แปลว่ายังไม่เคยสร้าง ให้สิทธิ์แสดงปุ่มได้
+          if (count === 0) {
+            setCanCreateGroup(true);
+          }
+        } catch (error) {
+          console.error("Error checking quota:", error);
+        }
+      }
+    };
+
+    checkGroupQuota();
+  }, [session]);
+  
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -19,7 +50,9 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
           <NavLink href="/" label="หน้าหลัก" />
           <NavLink href="/checkin" label="เช็คอิน" />
+          {canCreateGroup && (
           <NavLink href="/create-group" label="+ สร้างก๊วน" />
+          )}
           <NavLink href="/finance" label="การเงิน" />
           <NavLink href="/profile" label="โปรไฟล์" isProfile />
         </div>
