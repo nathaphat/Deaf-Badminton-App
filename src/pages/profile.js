@@ -89,12 +89,16 @@ const ProfileLevel = () => {
           </button>
         ))}
       </div>
-
       <button 
-        onClick={handleSave} // 4. ผูกฟังก์ชันบันทึก
-        className="w-full mt-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+        onClick={handleSave} 
+        disabled={isSaving} // ปิดการกดปุ่มชั่วคราวตอนกำลังเซฟ
+        className={`w-full mt-10 py-4 font-bold rounded-2xl transition-all shadow-lg active:scale-95 ${
+          isSaving 
+            ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
       >
-        บันทึกข้อมูล
+        {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
       </button>
     </div>
   );
