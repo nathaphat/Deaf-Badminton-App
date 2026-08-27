@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react'; // สำหรับดึงข้อมูลผู้ใช้ที่ล็อกอิน
 import { supabase } from '../logic/supabaseClient'; // นำเข้า Supabase (เช็ก path ให้ตรงกับไฟล์ของคุณ)
 
 const ProfileLevel = () => {
-  // 1. ตั้งค่าเริ่มต้นให้ตรงกับค่าในฐานข้อมูล
-  const [selectedLevel, setSelectedLevel] = useState('Beginner');
-
-  // 2. ปรับตัวเลือกให้เหลือ 3 ระดับ และเพิ่ม dbValue
+  const { data: session, status } = useSession();
+  const [selectedLevel, setSelectedLevel] = useState('Beginner'); 
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const levels = [
     { id: 'beginner', name: 'มือใหม่ (หน้าบ้าน/เบา)', dbValue: 'Beginner', color: 'bg-green-500', desc: 'มือใหม่หัดตี/ตบลูกได้' },
     { id: 'intermediate', name: 'ระดับกลาง', dbValue: 'Intermediate', color: 'bg-blue-500', desc: 'เหนียว/เล่นเป็นเกม' },
     { id: 'advanced', name: 'มือโปร (หนัก)', dbValue: 'Advanced', color: 'bg-red-500', desc: 'ตีหนัก/ม.ปลาย' },
   ];
-
-  const { data: session } = useSession(); // ดึง Session ผู้ใช้ปัจจุบัน
-  const [isSaving, setIsSaving] = useState(false); // ไว้ทำสถานะปุ่มตอนกำลังบันทึก
 
   const handleSave = async () => {
     // ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่หรือไม่
@@ -48,6 +46,40 @@ const ProfileLevel = () => {
       setIsSaving(false); // คืนค่าปุ่มกลับมาให้กดได้ปกติ
     }
   };
+  
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      // ตรวจสอบว่าโหลด Session เสร็จแล้วและมี user id
+      if (session?.user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('skill_level') // ดึงเฉพาะคอลัมน์ skill_level
+            .eq('id', session.user.id)
+            .single(); // คาดหวังข้อมูลแค่แถวเดียว
+
+          if (error) {
+            console.error('Error fetching data:', error);
+            return;
+          }
+
+          // ถ้ามีข้อมูลในฐานข้อมูล ให้เอามาเซ็ตทับค่าเริ่มต้น
+          if (data && data.skill_level) {
+            setSelectedLevel(data.skill_level);
+          }
+        } catch (error) {
+          console.error('Error:', error.message);
+        } finally {
+          setIsLoading(false); // โหลดเสร็จแล้ว
+        }
+      } else if (status === 'unauthenticated') {
+        setIsLoading(false); // ถ้าไม่ได้ล็อกอินก็ให้เลิกโหลด
+      }
+    };
+
+    fetchProfileData();
+  }, [session, status]);
+    
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
       <div className="text-center mb-8">
