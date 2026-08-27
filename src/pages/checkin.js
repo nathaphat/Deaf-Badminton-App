@@ -35,6 +35,32 @@ const CheckInPage = () => {
     }
   };
 
+  const handlePlayerCheckIn = async (sessionId, playDate) => {
+    // 1. ตรวจสอบว่าใน "วันเดียวกันนี้" ผู้เล่นคนนี้เช็คอินก๊วนอื่นไปหรือยัง?
+    const { data: existingCheckins, error: checkError } = await supabase
+      .from('checkins')
+      .select(`
+        id,
+        group_sessions!inner ( play_date )
+      `)
+      .eq('player_id', session.user.id)
+      .eq('group_sessions.play_date', playDate); // เช็กจากวันที่ตีแบด
+  
+    if (existingCheckins && existingCheckins.length > 0) {
+      alert('❌ คุณไม่สามารถเช็คอินได้ เนื่องจากคุณได้เช็คอินก๊วนอื่นในวันนี้ไปแล้วครับ!');
+      return; // หยุดการทำงาน ไม่ให้เช็คอิน
+    }
+  
+    // 2. ถ้ายังไม่เคยเช็คอินในวันนี้เลย ก็ให้บันทึกได้ตามปกติ
+    const { error: insertError } = await supabase
+      .from('checkins')
+      .insert([{ session_id: sessionId, player_id: session.user.id }]);
+      
+    if (!insertError) {
+      alert('✅ เช็คอินสำเร็จ!');
+    }
+  };
+  
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans bg-gray-50 min-h-screen">
       {/* ส่วนหัว */}
