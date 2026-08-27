@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useSession } from 'next-auth/react'; // สำหรับดึงข้อมูลผู้ใช้ที่ล็อกอิน
+import { supabase } from '../logic/supabaseClient'; // นำเข้า Supabase (เช็ก path ให้ตรงกับไฟล์ของคุณ)
 
 const ProfileLevel = () => {
   // 1. ตั้งค่าเริ่มต้นให้ตรงกับค่าในฐานข้อมูล
@@ -11,13 +13,41 @@ const ProfileLevel = () => {
     { id: 'advanced', name: 'มือโปร (หนัก)', dbValue: 'Advanced', color: 'bg-red-500', desc: 'ตีหนัก/ม.ปลาย' },
   ];
 
-  // ฟังก์ชันสำหรับจำลองการบันทึกข้อมูล
-  const handleSave = () => {
-    // ค่าที่จะส่งไป Supabase/API คือ 'Beginner', 'Intermediate', หรือ 'Advanced'
-    console.log('ค่าที่จะส่งไปบันทึกในฐานข้อมูล:', selectedLevel); 
-    // TODO: ใส่โค้ดอัปเดตฐานข้อมูลตรงนี้
-  };
+  const { data: session } = useSession(); // ดึง Session ผู้ใช้ปัจจุบัน
+  const [isSaving, setIsSaving] = useState(false); // ไว้ทำสถานะปุ่มตอนกำลังบันทึก
 
+  const handleSave = async () => {
+    // ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่หรือไม่
+    if (!session || !session.user) {
+      alert('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+
+    setIsSaving(true); // เปลี่ยนสถานะเป็นกำลังบันทึก
+
+    try {
+      console.log('กำลังส่งค่าไปฐานข้อมูล:', selectedLevel); 
+
+      // โค้ดอัปเดตข้อมูลไปยัง Supabase
+      const { data, error } = await supabase
+        .from('profiles') // ชื่อ Table
+        .update({ skill_level: selectedLevel }) // คอลัมน์ที่จะอัปเดต
+        .eq('id', session.user.id); // เงื่อนไข: อัปเดตเฉพาะ id ของผู้ใช้นี้
+
+      if (error) {
+        throw error; // โยน Error ไปเข้า block catch
+      }
+
+      // ถ้าสำเร็จ
+      alert('บันทึกระดับฝีมือเรียบร้อยแล้ว!');
+      
+    } catch (error) {
+      console.error('Error updating profile:', error.message);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
+    } finally {
+      setIsSaving(false); // คืนค่าปุ่มกลับมาให้กดได้ปกติ
+    }
+  };
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
       <div className="text-center mb-8">
