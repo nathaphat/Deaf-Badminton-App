@@ -199,4 +199,4 @@ const MyGroupDashboard = () => {
   );
 };
 
-MyGroupDashboard;
+export default MyGroupDashboard;
