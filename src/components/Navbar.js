@@ -11,17 +11,19 @@ const Navbar = () => {
     const checkGroupQuota = async () => {
       if (session?.user?.id) {
         try {
-          // สั่งให้นับจำนวนก๊วนที่ผู้ใช้นี้เป็นคนสร้าง
           const { count, error } = await supabase
-            .from('daily_sessions') // เช็กชื่อตารางให้ตรงกับที่คุณใช้งานนะครับ
+            .from('badminton_groups') 
             .select('*', { count: 'exact', head: true })
             .eq('organizer_id', session.user.id);
+          
+          if (error) {
+            console.error("Error fetching group count:", error);
+            return;
+          }
 
-          if (error) throw error;
-
-          // ถ้าจำนวนก๊วนเป็น 0 แปลว่ายังไม่เคยสร้าง ให้สิทธิ์แสดงปุ่มได้
-          if (count === 0) {
-            setCanCreateGroup(true);
+          // ถ้านับได้ 1 (หรือมากกว่า) แปลว่ามีก๊วนแล้ว ให้สิทธิ์สร้างเป็น false
+          if (count > 0) {
+            setCanCreateGroup(false); 
           }
         } catch (error) {
           console.error("Error checking quota:", error);
