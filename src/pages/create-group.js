@@ -26,29 +26,42 @@ const CreateGroup = () => {
 
     setIsSaving(true);
     try {
-      const { data, error } = await supabase
-        .from('badminton_groups')
-        .insert([
-          { 
-            name: groupName, 
-            organizer_id: session.user.id, // ดึง ID คนล็อกอินมาเป็นผู้จัด
-            play_date: playDate 
-          }
-        ]);
+      // 1. เช็กโควต้าก่อนบันทึก
+      const { count, error: countError } = await supabase
+        .from('daily_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('organizer_id', session.user.id);
 
-      if (error) throw error;
-      
-      alert('🎉 สร้างก๊วนสำเร็จแล้ว!');
-      // TODO: สามารถใช้ Router ของ Next.js เพื่อเด้งไปหน้าอื่นหลังสร้างเสร็จได้
-      // setGroupName('');
-      // setPlayDate('');
+      if (countError) throw countError;
+
+      // 2. ถ้าเจอว่าสร้างไปแล้ว 1 ครั้ง ให้บล็อกการทำงานทันที
+      if (count >= 1) {
+        alert('คุณได้ใช้สิทธิ์สร้างก๊วนครบ 1 ครั้งแล้วครับ ไม่สามารถสร้างเพิ่มได้');
+        setIsSaving(false);
+        return; 
+      }
+
+      // 3. ถ้าโควต้ายังเหลือ (count = 0) ก็บันทึกข้อมูลตามปกติ
+      const { error: insertError } = await supabase
+        .from('daily_sessions')
+        .insert([{ 
+          organizer_id: session.user.id,
+          play_date: playDate,
+          checkin_close_time: closeTime,
+          max_players: maxPlayers,
+          is_active: true
+        }]);
+
+      if (insertError) throw insertError;
+      alert('เปิดให้สมาชิกลงชื่อเช็คอินล่วงหน้าสำเร็จ!');
       
     } catch (error) {
-      console.error('Error creating group:', error.message);
+      console.error(error);
       alert('เกิดข้อผิดพลาด: ' + error.message);
     } finally {
       setIsSaving(false);
     }
+    
   };
 
   return (
