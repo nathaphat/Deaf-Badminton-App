@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react'; // สำหรับดึงข้อมูลผู้ใช้ที่ล็อกอิน
-import { supabase } from '../logic/supabaseClient'; // นำเข้า Supabase (เช็ก path ให้ตรงกับไฟล์ของคุณ)
+import { useSession } from 'next-auth/react'; 
+import { supabase } from '../logic/supabaseClient'; 
 
 const ProfileLevel = () => {
   const { data: session, status } = useSession();
@@ -10,6 +10,9 @@ const ProfileLevel = () => {
   const [handPref, setHandPref] = useState('');
   
   const [selectedLevel, setSelectedLevel] = useState('Beginner'); 
+  
+  const [isGenderLocked, setIsGenderLocked] = useState(false);
+  const [isHandPrefLocked, setIsHandPrefLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -20,13 +23,13 @@ const ProfileLevel = () => {
   ];
 
   const handleSave = async () => {
-    // ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่หรือไม่
+
     if (!session || !session.user) {
       alert('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่');
       return;
     }
 
-    setIsSaving(true); // เปลี่ยนสถานะเป็นกำลังบันทึก
+    setIsSaving(true); 
 
     try {
       console.log('กำลังส่งค่าไปฐานข้อมูล:', selectedLevel); 
@@ -41,17 +44,19 @@ const ProfileLevel = () => {
         .eq('id', session.user.id); 
 
       if (error) {
-        throw error; // โยน Error ไปเข้า block catch
+        throw error; 
       }
-
-      // ถ้าสำเร็จ
+      
       alert('บันทึกระดับฝีมือเรียบร้อยแล้ว!');
+      
+      if (gender) setIsGenderLocked(true);
+      if (handPref) setIsHandPrefLocked(true);
       
     } catch (error) {
       console.error('Error updating profile:', error.message);
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
     } finally {
-      setIsSaving(false); // คืนค่าปุ่มกลับมาให้กดได้ปกติ
+      setIsSaving(false);
     }
   };
   
@@ -73,18 +78,24 @@ const ProfileLevel = () => {
 
           if (data) {
             if (data.avatar_url) setAvatarUrl(data.avatar_url);
-            if (data.gender) setGender(data.gender);
-            if (data.hand_preference) setHandPref(data.hand_preference);
             if (data.skill_level) setSelectedLevel(data.skill_level);
+            if (data.gender) {
+              setGender(data.gender);
+              setIsGenderLocked(true); 
+            }
+            if (data.hand_preference) {
+              setHandPref(data.hand_preference);
+              setIsHandPrefLocked(true);
+            }
           }
           
         } catch (error) {
           console.error('Error:', error.message);
         } finally {
-          setIsLoading(false); // โหลดเสร็จแล้ว
+          setIsLoading(false); 
         }
       } else if (status === 'unauthenticated') {
-        setIsLoading(false); // ถ้าไม่ได้ล็อกอินก็ให้เลิกโหลด
+        setIsLoading(false); 
       }
     };
 
@@ -112,46 +123,56 @@ const ProfileLevel = () => {
         </h2>
       </div>
 
-      {/* ส่วนเลือกเพศ */}
+      {/* เพศ */}
       <div className="mb-6">
-        <label className="block text-sm font-bold text-gray-700 mb-3">เพศ</label>
+        <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
+          <span>เพศ</span>
+          {isGenderLocked && <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">🔒 ไม่สามารถเปลี่ยนได้</span>}
+        </label>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setGender('Male')}
+            disabled={isGenderLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
-              gender === 'Male' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200 text-gray-500'
-            }`}
+              gender === 'Male' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200 text-gray-400'
+            } ${isGenderLocked ? 'opacity-70 cursor-not-allowed' : 'hover:border-blue-300'}`}
           >
             ชาย 👨
           </button>
           <button
             onClick={() => setGender('Female')}
+            disabled={isGenderLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
-              gender === 'Female' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-white border-gray-200 text-gray-500'
-            }`}
+              gender === 'Female' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-white border-gray-200 text-gray-400'
+            } ${isGenderLocked ? 'opacity-70 cursor-not-allowed' : 'hover:border-pink-300'}`}
           >
             หญิง 👩
           </button>
         </div>
       </div>
 
-      {/* ส่วนเลือกมือที่ถนัด */}
+      {/* มือที่ถนัด */}
       <div className="mb-8">
-        <label className="block text-sm font-bold text-gray-700 mb-3">ข้างที่ถนัด</label>
+        <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
+          <span>ข้างที่ถนัด</span>
+          {isHandPrefLocked && <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">🔒 ไม่สามารถเปลี่ยนได้</span>}
+        </label>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setHandPref('Left')}
+            disabled={isHandPrefLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
-              handPref === 'Left' ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-white border-gray-200 text-gray-500'
-            }`}
+              handPref === 'Left' ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-white border-gray-200 text-gray-400'
+            } ${isHandPrefLocked ? 'opacity-70 cursor-not-allowed' : 'hover:border-orange-300'}`}
           >
             มือซ้าย 👈
           </button>
           <button
             onClick={() => setHandPref('Right')}
+            disabled={isHandPrefLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
-              handPref === 'Right' ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-white border-gray-200 text-gray-500'
-            }`}
+              handPref === 'Right' ? 'bg-orange-50 border-orange-500 text-orange-700' : 'bg-white border-gray-200 text-gray-400'
+            } ${isHandPrefLocked ? 'opacity-70 cursor-not-allowed' : 'hover:border-orange-300'}`}
           >
             มือขวา 👉
           </button>
