@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 
 const ProfileLevel = () => {
-  const [selectedLevel, setSelectedLevel] = useState('หน้าบ้าน');
+  // 1. ตั้งค่าเริ่มต้นให้ตรงกับค่าในฐานข้อมูล
+  const [selectedLevel, setSelectedLevel] = useState('Beginner');
 
+  // 2. ปรับตัวเลือกให้เหลือ 3 ระดับ และเพิ่ม dbValue
   const levels = [
-    { id: 'front', name: 'หน้าบ้าน', color: 'bg-orange-500', desc: 'มือใหม่หัดตี/เบบี้' },
-    { id: 'easy', name: 'เบา', color: 'bg-green-500', desc: 'ตบลูกได้/ประถม' },
-    { id: 'medium', name: 'กลาง', color: 'bg-blue-500', desc: 'เหนียว/เล่นเป็นเกม' },
-    { id: 'hard', name: 'หนัก', color: 'bg-red-500', desc: 'มือโปร/ม.ปลาย' },
+    { id: 'beginner', name: 'มือใหม่ (หน้าบ้าน/เบา)', dbValue: 'Beginner', color: 'bg-green-500', desc: 'มือใหม่หัดตี/ตบลูกได้' },
+    { id: 'intermediate', name: 'ระดับกลาง', dbValue: 'Intermediate', color: 'bg-blue-500', desc: 'เหนียว/เล่นเป็นเกม' },
+    { id: 'advanced', name: 'มือโปร (หนัก)', dbValue: 'Advanced', color: 'bg-red-500', desc: 'ตีหนัก/ม.ปลาย' },
   ];
+
+  // ฟังก์ชันสำหรับจำลองการบันทึกข้อมูล
+  const handleSave = () => {
+    // ค่าที่จะส่งไป Supabase/API คือ 'Beginner', 'Intermediate', หรือ 'Advanced'
+    console.log('ค่าที่จะส่งไปบันทึกในฐานข้อมูล:', selectedLevel); 
+    // TODO: ใส่โค้ดอัปเดตฐานข้อมูลตรงนี้
+  };
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
@@ -17,32 +25,33 @@ const ProfileLevel = () => {
         <p className="text-xs text-gray-500">เลือกความสามารถที่ตรงกับคุณที่สุด</p>
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
+      {/* ปรับ grid-cols เป็น 1 หรือ 3 ตามความสวยงาม เพราะมี 3 ตัวเลือกแล้ว */}
+      <div className="grid grid-cols-1 gap-4"> 
         {levels.map((level) => (
           <button
             key={level.id}
-            onClick={() => setSelectedLevel(level.name)}
-            className={`flex flex-col items-center p-5 rounded-[2rem] border-2 transition-all duration-300 ${
-              selectedLevel === level.name 
+            // 3. เปลี่ยนมาเซ็ตค่า dbValue แทน name
+            onClick={() => setSelectedLevel(level.dbValue)} 
+            className={`flex items-center p-4 rounded-[2rem] border-2 transition-all duration-300 ${
+              selectedLevel === level.dbValue 
                 ? 'border-green-500 bg-green-50 scale-105 shadow-md' 
                 : 'border-gray-100 bg-white hover:border-gray-200'
             }`}
           >
-            <div className={`w-14 h-14 rounded-full ${level.color} flex items-center justify-center text-white mb-3 shadow-lg text-xl`}>
+            <div className={`w-14 h-14 rounded-full ${level.color} flex flex-shrink-0 items-center justify-center text-white mr-4 shadow-lg text-xl`}>
               🏸
             </div>
             
-            <div className="text-center mb-3">
+            <div className="text-left flex-grow">
               <div className="font-bold text-gray-800">{level.name}</div>
-              <div className="text-[10px] text-gray-400 leading-tight">{level.desc}</div>
+              <div className="text-[12px] text-gray-500 leading-tight">{level.desc}</div>
             </div>
 
-            {/* วงกลม Checkbox ด้านล่างแบบรูปที่ 2 */}
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-              selectedLevel === level.name ? 'border-green-500 bg-green-500' : 'border-gray-300'
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              selectedLevel === level.dbValue ? 'border-green-500 bg-green-500' : 'border-gray-300'
             }`}>
-              {selectedLevel === level.name && (
-                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {selectedLevel === level.dbValue && (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
                 </svg>
               )}
@@ -51,7 +60,10 @@ const ProfileLevel = () => {
         ))}
       </div>
 
-      <button className="w-full mt-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95">
+      <button 
+        onClick={handleSave} // 4. ผูกฟังก์ชันบันทึก
+        className="w-full mt-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+      >
         บันทึกข้อมูล
       </button>
     </div>
