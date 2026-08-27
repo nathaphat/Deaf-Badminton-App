@@ -50,8 +50,11 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
           <NavLink href="/" label="หน้าหลัก" />
           <NavLink href="/checkin" label="เช็คอิน" />
-          {canCreateGroup && (
-          <NavLink href="/create-group" label="+ สร้างก๊วน" />
+          {canCreateGroup ? (
+            <NavLink href="/create-group" label="+ สร้างก๊วน" />
+          ) : (
+            /* ถ้าสร้างก๊วนไปแล้ว (canCreateGroup เป็น false) ให้โชว์เมนูจัดการก๊วนแทน */
+            <NavLink href="/my-group" label="👑 ก๊วนของฉัน" />
           )}
           <NavLink href="/finance" label="การเงิน" />
           <NavLink href="/profile" label="โปรไฟล์" isProfile />
