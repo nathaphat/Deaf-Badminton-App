@@ -19,6 +19,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
           <NavLink href="/" label="หน้าหลัก" />
           <NavLink href="/checkin" label="เช็คอิน" />
+          <NavLink href="/create-group" label="+ สร้างก๊วน" />
           <NavLink href="/finance" label="การเงิน" />
           <NavLink href="/profile" label="โปรไฟล์" isProfile />
         </div>
