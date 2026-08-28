@@ -97,6 +97,10 @@ const Navbar = () => {
           <NavLink href="/finance" label="การเงิน" onClick={handleCloseMenu} />
           <NavLink href="/profile" label="โปรไฟล์" onClick={handleCloseMenu} />
         </div>
+       <div className="w-full border-t border-gray-200 mt-2 pt-4 text-center">
+        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Developed By</p>
+        <p className="text-xs font-bold text-gray-600">Nathaphat Tianthong</p>
+      </div>
       )}
     </nav>
   );
