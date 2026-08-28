@@ -25,7 +25,7 @@ export default function Home() {
     const { data: matches, error } = await supabase
       .from('matches')
       .select('*')
-      .or(`team_a_1.eq.${userId},team_a_p2.eq.${userId},team_b_p1.eq.${userId},team_b_p2.eq.${userId}`);
+      .or(`team_a_1.eq.${userId},team_a_2.eq.${userId},team_b_1.eq.${userId},team_b_p2.eq.${userId}`);
 
     if (error) {
       console.error('Error fetching stats:', error);
@@ -37,7 +37,7 @@ export default function Home() {
 
       matches.forEach(match => {
         // เช็คว่าคนนี้อยู่ฝั่ง A หรือ B
-        const isTeamA = match.team_a_1 === userId || match.team_a_p2 === userId;
+        const isTeamA = match.team_a_1 === userId || match.team_a_2 === userId;
         const winner = match.winner_team; // 'A' หรือ 'B' หรือ 'Draw'
 
         if (winner === 'Draw') {
