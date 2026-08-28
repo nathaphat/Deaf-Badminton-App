@@ -18,7 +18,8 @@ const ProfileLevel = () => {
   
   const levels = [
     { id: 'beginner', name: 'มือใหม่ (หน้าบ้าน/เบา)', dbValue: 'Beginner', color: 'bg-green-500', desc: 'มือใหม่หัดตี/ตบลูกได้' },
-    { id: 'intermediate', name: 'ระดับกลาง', dbValue: 'Intermediate', color: 'bg-blue-500', desc: 'เหนียว/เล่นเป็นเกม' },
+    { id: 'novice', name: 'ตีโต้ได้ (พอรู้จังหวะ)', dbValue: 'Novice', color: 'bg-sky-500', desc: 'เหนียว/เล่นเป็นเกม' },
+    { id: 'intermediate', name: 'ระดับกลาง (รับ-รุกได้)', dbValue: 'Intermediate', color: 'bg-orange-500', desc: 'เหนียว/เล่นเป็นเกม' },
     { id: 'advanced', name: 'มือโปร (หนัก)', dbValue: 'Advanced', color: 'bg-red-500', desc: 'ตีหนัก/ม.ปลาย' },
   ];
 
