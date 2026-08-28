@@ -18,11 +18,19 @@ const CheckInPage = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // 1. เพิ่มการดึงข้อมูล checkins และเชื่อมไปเอาชื่อ/รูปจาก profiles
+      // 1. ปรับ Query ดึง checkin_close_time และชื่อผู้จัดก๊วน (profiles) เพิ่มเข้ามา
       const { data: availableSessions, error: sessionError } = await supabase
         .from('group_sessions')
-        .select(`id, play_date, checkin_close_time, max_players, is_active,
-          badminton_groups ( name ),
+        .select(`
+          id, 
+          play_date, 
+          checkin_close_time, 
+          max_players, 
+          is_active,
+          badminton_groups ( 
+            name,
+            profiles ( display_name )
+          ),
           checkins (
             player_id,
             profiles (
@@ -116,26 +124,22 @@ const CheckInPage = () => {
     const currentCheckins = sessionData.checkins?.length || 0;
     const maxPlayers = sessionData.max_players;
     
-    // ดึงเวลาปิดรับ แล้วเปรียบเทียบกับเวลาปัจจุบัน
     const closeTime = new Date(sessionData.checkin_close_time);
     const now = new Date();
-    const isTimeUp = now > closeTime; // หากเวลาปัจจุบัน เลยเวลาปิดรับแล้ว จะเป็น true
+    const isTimeUp = now > closeTime; 
 
     const isCheckedInThisSession = myCheckins.some(c => c.session_id === sessionId);
     const isCheckedInOtherSessionToday = myCheckins.some(
       c => c.group_sessions?.play_date === playDate && c.session_id !== sessionId
     );
 
-    // กรณี: ลงชื่อในก๊วนนี้ไปแล้ว
     if (isCheckedInThisSession) {
       if (isTimeUp) {
-         // หมดเวลายกเลิก ผู้จัดเตรียมจองคอร์ทแล้ว
          return { text: 'ล็อกรายชื่อแล้ว', color: 'bg-gray-700 text-white cursor-not-allowed', disabled: true, action: 'none' };
       }
       return { text: 'ยกเลิกการเช็คอิน', color: 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200', disabled: false, action: 'cancel' };
     }
 
-    // กรณี: ยังไม่ได้ลงชื่อ
     if (isTimeUp) {
        return { text: 'หมดเวลาลงชื่อ', color: 'bg-gray-200 text-gray-500 cursor-not-allowed', disabled: true, action: 'none' };
     }
@@ -149,26 +153,21 @@ const CheckInPage = () => {
     return { text: 'ลงชื่อเช็คอิน', color: 'bg-[#16a34a] text-white hover:bg-green-700 shadow-md', disabled: false, action: 'checkin' };
   };
 
+  const renderSkillBadge = (level) => {
+    if (!level) return null;
+    switch (level) {
+      case 'Beginner': return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">🌱 มือใหม่</span>;
+      case 'Novice': return <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded text-[10px] font-bold">🏸 ตีโต้ได้</span>;
+      case 'Intermediate': return <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">🔥 ระดับกลาง</span>;
+      case 'Advanced': return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">👑 มือโปร</span>;
+      default: return <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">{level}</span>;
+    }
+  };
+
   if (status === 'loading' || isLoading) {
     return <div className="text-center p-10 flex justify-center items-center h-screen">กำลังค้นหาก๊วน...</div>;
   }
 
-  const renderSkillBadge = (level) => {
-    if (!level) return null; // ถ้าไม่ได้ระบุ ไม่ต้องแสดง
-  
-    switch (level) {
-      case 'Beginner':
-        return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">🌱 มือใหม่</span>;
-      case 'Novice':
-        return <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded text-[10px] font-bold">🏸 ตีโต้ได้</span>;
-      case 'Intermediate':
-        return <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">🔥 ระดับกลาง</span>;
-      case 'Advanced':
-        return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">👑 มือโปร</span>;
-      default:
-        return <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">{level}</span>;
-    }
-  };
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans bg-gray-50 min-h-screen pb-20">
       <div className="bg-[#0f172a] text-white p-8 rounded-3xl shadow-md mb-6">
@@ -184,13 +183,13 @@ const CheckInPage = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {sessionsList.map((s) => {
-            const btn = getButtonStatus(s); // ส่งไปทั้ง object เพื่อคำนวณจำนวนคน
+            const btn = getButtonStatus(s); 
             const currentPlayers = s.checkins?.length || 0;
 
             return (
               <div key={s.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col justify-between">
                 <div>
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-4">
                     <h3 className="text-xl font-bold text-gray-800">
                       {s.badminton_groups?.name || 'ไม่ทราบชื่อก๊วน'}
                     </h3>
@@ -198,11 +197,22 @@ const CheckInPage = () => {
                       รับ {s.max_players} คน
                     </span>
                   </div>
-                  <div className="text-gray-500 text-sm mb-4 flex items-center gap-2">
-                    📅 วันที่ตี: <span className="font-semibold text-gray-700">{s.play_date}</span>
+                  
+                  {/* 2. เพิ่มส่วนแสดงชื่อผู้จัด วันที่ และเวลาปิดรับลงชื่อ */}
+                  <div className="text-gray-500 text-sm mb-6 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      👑 <span className="font-semibold text-gray-700">ผู้จัด:</span> {s.badminton_groups?.profiles?.display_name || 'ไม่ระบุ'}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      📅 <span className="font-semibold text-gray-700">วันที่ตี:</span> {s.play_date}
+                    </div>
+                    {s.checkin_close_time && (
+                      <div className="flex items-center gap-2">
+                        ⏰ <span className="font-semibold text-red-500">ปิดรับ:</span> {new Date(s.checkin_close_time).toLocaleString('th-TH')}
+                      </div>
+                    )}
                   </div>
 
-                  {/* 3. ส่วนแสดงรายชื่อคนที่เช็คอินแล้ว */}
                   <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="text-sm font-bold text-gray-700">ผู้เล่นที่เข้าร่วมแล้ว</h4>
