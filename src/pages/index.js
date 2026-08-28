@@ -25,7 +25,7 @@ export default function Home() {
     const { data: matches, error } = await supabase
       .from('matches')
       .select('*')
-      .or(`team_a_1.eq.${userId},team_a_2.eq.${userId},team_b_1.eq.${userId},team_b_p2.eq.${userId}`);
+      .or(`team_a_1.eq.${userId},team_a_2.eq.${userId},team_b_1.eq.${userId},team_b_2.eq.${userId}`);
 
     if (error) {
       console.error('Error fetching stats:', error);
