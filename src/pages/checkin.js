@@ -18,6 +18,7 @@ const CheckInPage = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
+      // 1. เพิ่มการดึงข้อมูล checkins และเชื่อมไปเอาชื่อ/รูปจาก profiles
       const { data: availableSessions, error: sessionError } = await supabase
         .from('group_sessions')
         .select(`
@@ -25,7 +26,15 @@ const CheckInPage = () => {
           play_date, 
           max_players, 
           is_active,
-          badminton_groups ( name )
+          badminton_groups ( name ),
+          checkins (
+            player_id,
+            profiles (
+              display_name,
+              avatar_url,
+              skill_level
+            )
+          )
         `)
         .gte('play_date', today)
         .order('play_date', { ascending: true });
@@ -82,7 +91,6 @@ const CheckInPage = () => {
     }
   };
 
-  // 1. เพิ่มฟังก์ชันสำหรับยกเลิกการเช็คอิน
   const handleCancelCheckIn = async (sessionId) => {
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการเช็คอินรอบนี้?')) return;
 
@@ -92,11 +100,11 @@ const CheckInPage = () => {
         .from('checkins')
         .delete()
         .eq('session_id', sessionId)
-        .eq('player_id', session.user.id); // ต้องระบุ ID ผู้เล่นด้วยเพื่อป้องกันการลบของคนอื่น
+        .eq('player_id', session.user.id);
 
       if (error) throw error;
       alert('❌ ยกเลิกการเช็คอินเรียบร้อยแล้ว');
-      fetchData(); // โหลดข้อมูลใหม่
+      fetchData(); 
 
     } catch (error) {
       console.error(error);
@@ -106,36 +114,30 @@ const CheckInPage = () => {
     }
   };
 
-  // 2. ปรับตัวช่วยเช็กสถานะปุ่ม ให้คืนค่า action เพิ่มเติม
-  const getButtonStatus = (sessionId, playDate) => {
+  // 2. ปรับการทำงานของปุ่ม ให้เช็ก "คนเต็ม" เพิ่มเข้าไปด้วย
+  const getButtonStatus = (sessionData) => {
+    const sessionId = sessionData.id;
+    const playDate = sessionData.play_date;
+    const currentCheckins = sessionData.checkins?.length || 0;
+    const maxPlayers = sessionData.max_players;
+
     const isCheckedInThisSession = myCheckins.some(c => c.session_id === sessionId);
     const isCheckedInOtherSessionToday = myCheckins.some(
       c => c.group_sessions?.play_date === playDate && c.session_id !== sessionId
     );
 
     if (isCheckedInThisSession) {
-      // ถ้าเช็คอินก๊วนนี้แล้ว ให้ปุ่มกลายเป็นปุ่มยกเลิก
-      return { 
-        text: 'ยกเลิกการเช็คอิน', 
-        color: 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200', 
-        disabled: false,
-        action: 'cancel' // ระบุว่าปุ่มนี้คือปุ่มยกเลิก
-      };
+      return { text: 'ยกเลิกการเช็คอิน', color: 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200', disabled: false, action: 'cancel' };
     }
     if (isCheckedInOtherSessionToday) {
-      return { 
-        text: '🔒 ติดก๊วนอื่นแล้ว', 
-        color: 'bg-gray-100 text-gray-400 cursor-not-allowed', 
-        disabled: true,
-        action: 'none'
-      };
+      return { text: '🔒 ติดก๊วนอื่นแล้ว', color: 'bg-gray-100 text-gray-400 cursor-not-allowed', disabled: true, action: 'none' };
     }
-    return { 
-      text: 'ลงชื่อเช็คอิน', 
-      color: 'bg-[#16a34a] text-white hover:bg-green-700 shadow-md', 
-      disabled: false,
-      action: 'checkin'
-    };
+    // ดักจับคนเต็มก๊วน
+    if (currentCheckins >= maxPlayers) {
+      return { text: 'เต็มแล้ว', color: 'bg-gray-200 text-gray-500 cursor-not-allowed', disabled: true, action: 'none' };
+    }
+
+    return { text: 'ลงชื่อเช็คอิน', color: 'bg-[#16a34a] text-white hover:bg-green-700 shadow-md', disabled: false, action: 'checkin' };
   };
 
   if (status === 'loading' || isLoading) {
@@ -143,7 +145,7 @@ const CheckInPage = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 font-sans bg-gray-50 min-h-screen pb-20">
+    <div className="max-w-5xl mx-auto p-4 font-sans bg-gray-50 min-h-screen pb-20">
       <div className="bg-[#0f172a] text-white p-8 rounded-3xl shadow-md mb-6">
         <h1 className="text-3xl font-black mb-2">รอบก๊วนที่เปิดรับ</h1>
         <p className="text-blue-200">เลือกก๊วนและวันที่คุณต้องการไปร่วมแจมได้เลย!</p>
@@ -155,9 +157,11 @@ const CheckInPage = () => {
           <p className="text-gray-500 font-medium">ยังไม่มีก๊วนไหนเปิดรอบในขณะนี้ครับ</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {sessionsList.map((s) => {
-            const btn = getButtonStatus(s.id, s.play_date);
+            const btn = getButtonStatus(s); // ส่งไปทั้ง object เพื่อคำนวณจำนวนคน
+            const currentPlayers = s.checkins?.length || 0;
+
             return (
               <div key={s.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col justify-between">
                 <div>
@@ -169,16 +173,47 @@ const CheckInPage = () => {
                       รับ {s.max_players} คน
                     </span>
                   </div>
-                  <div className="text-gray-500 text-sm mb-6 flex items-center gap-2">
+                  <div className="text-gray-500 text-sm mb-4 flex items-center gap-2">
                     📅 วันที่ตี: <span className="font-semibold text-gray-700">{s.play_date}</span>
+                  </div>
+
+                  {/* 3. ส่วนแสดงรายชื่อคนที่เช็คอินแล้ว */}
+                  <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-bold text-gray-700">ผู้เล่นที่เข้าร่วมแล้ว</h4>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${currentPlayers >= s.max_players ? 'bg-red-100 text-red-600' : 'bg-gray-200 text-gray-600'}`}>
+                        {currentPlayers} / {s.max_players}
+                      </span>
+                    </div>
+                    
+                    {currentPlayers > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {s.checkins.map((c, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-white pr-3 p-1 rounded-full border border-gray-200 shadow-sm">
+                            {c.profiles?.avatar_url ? (
+                              <img src={c.profiles.avatar_url} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px]">🏸</div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-gray-700">{c.profiles?.display_name || 'ไม่ระบุชื่อ'}</span>
+                              {c.profiles?.skill_level && (
+                                <span className="text-[9px] text-gray-400">{c.profiles.skill_level}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 text-center py-2">ยังไม่มีผู้ลงชื่อในรอบนี้ เป็นคนแรกเลยสิ!</p>
+                    )}
                   </div>
                 </div>
 
-                {/* 3. ดักจับ onClick ว่าจะเรียกฟังก์ชันเช็คอิน หรือ ยกเลิก */}
                 <button
                   onClick={() => btn.action === 'cancel' ? handleCancelCheckIn(s.id) : handleCheckIn(s.id, s.play_date)}
                   disabled={btn.disabled || isProcessing}
-                  className={`w-full py-3 font-bold rounded-2xl transition-all active:scale-95 ${btn.color} ${
+                  className={`w-full py-4 font-bold rounded-2xl transition-all active:scale-95 ${btn.color} ${
                     isProcessing && !btn.disabled ? 'opacity-70 cursor-wait' : ''
                   }`}
                 >
