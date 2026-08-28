@@ -144,6 +144,46 @@ const CheckInPage = () => {
     return <div className="text-center p-10 flex justify-center items-center h-screen">กำลังค้นหาก๊วน...</div>;
   }
 
+  // ปรับฟังก์ชัน getButtonStatus ให้รองรับการล็อกเวลา
+  const getButtonStatus = (sessionData) => {
+    const sessionId = sessionData.id;
+    const playDate = sessionData.play_date;
+    const currentCheckins = sessionData.checkins?.length || 0;
+    const maxPlayers = sessionData.max_players;
+    
+    // ดึงเวลาปิดรับ แล้วเปรียบเทียบกับเวลาปัจจุบัน
+    const closeTime = new Date(sessionData.checkin_close_time);
+    const now = new Date();
+    const isTimeUp = now > closeTime; // หากเวลาปัจจุบัน เลยเวลาปิดรับแล้ว จะเป็น true
+
+    const isCheckedInThisSession = myCheckins.some(c => c.session_id === sessionId);
+    const isCheckedInOtherSessionToday = myCheckins.some(
+      c => c.group_sessions?.play_date === playDate && c.session_id !== sessionId
+    );
+
+    // กรณี: ลงชื่อในก๊วนนี้ไปแล้ว
+    if (isCheckedInThisSession) {
+      if (isTimeUp) {
+         // หมดเวลายกเลิก ผู้จัดเตรียมจองคอร์ทแล้ว
+         return { text: 'ล็อกรายชื่อแล้ว', color: 'bg-gray-700 text-white cursor-not-allowed', disabled: true, action: 'none' };
+      }
+      return { text: 'ยกเลิกการเช็คอิน', color: 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200', disabled: false, action: 'cancel' };
+    }
+
+    // กรณี: ยังไม่ได้ลงชื่อ
+    if (isTimeUp) {
+       return { text: 'หมดเวลาลงชื่อ', color: 'bg-gray-200 text-gray-500 cursor-not-allowed', disabled: true, action: 'none' };
+    }
+    if (isCheckedInOtherSessionToday) {
+      return { text: '🔒 ติดก๊วนอื่นแล้ว', color: 'bg-gray-100 text-gray-400 cursor-not-allowed', disabled: true, action: 'none' };
+    }
+    if (currentCheckins >= maxPlayers) {
+      return { text: 'เต็มแล้ว', color: 'bg-gray-200 text-gray-500 cursor-not-allowed', disabled: true, action: 'none' };
+    }
+
+    return { text: 'ลงชื่อเช็คอิน', color: 'bg-[#16a34a] text-white hover:bg-green-700 shadow-md', disabled: false, action: 'checkin' };
+  };
+  
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans bg-gray-50 min-h-screen pb-20">
       <div className="bg-[#0f172a] text-white p-8 rounded-3xl shadow-md mb-6">
