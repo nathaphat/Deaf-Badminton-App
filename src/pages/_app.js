@@ -11,6 +11,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
         <main className="max-w-4xl mx-auto p-4">
           <Component {...pageProps} />
         </main>
+        <Footer/>
       </div>
     </SessionProvider>
   )
