@@ -1,6 +1,7 @@
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useState, useEffect } from 'react'
 import { supabase } from '../logic/supabaseClient'
+import Link from 'next/link';
 
 export default function Home() {
   const { data: session } = useSession()
