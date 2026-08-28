@@ -98,7 +98,26 @@ return (
         <h3 className="text-3xl font-black text-slate-800 mt-1">{stats.winRate}</h3>
       </div>
     </div>
-
+    <Link href="/live-match" className="block mt-6">
+  <div className="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-3xl p-6 text-white shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-between border border-slate-700">
+    <div className="flex items-center gap-4">
+      {/* จุดไฟกระพริบสีแดงแบบ Live */}
+      <div className="relative flex h-5 w-5 justify-center items-center">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+      </div>
+      
+      <div>
+        <h3 className="text-xl font-black tracking-wide mb-1">LIVE MATCH</h3>
+        <p className="text-sm text-slate-300">กระดานแข่งขันสด / ดูคอร์ทที่กำลังตี</p>
+      </div>
+    </div>
+    
+    <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-xl">
+      👉
+    </div>
+  </div>
+</Link>
   </div>
 )
 }
