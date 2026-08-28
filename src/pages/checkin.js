@@ -152,7 +152,23 @@ const CheckInPage = () => {
   if (status === 'loading' || isLoading) {
     return <div className="text-center p-10 flex justify-center items-center h-screen">กำลังค้นหาก๊วน...</div>;
   }
+
+  const renderSkillBadge = (level) => {
+    if (!level) return null; // ถ้าไม่ได้ระบุ ไม่ต้องแสดง
   
+    switch (level) {
+      case 'Beginner':
+        return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">🌱 มือใหม่</span>;
+      case 'Novice':
+        return <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded text-[10px] font-bold">🏸 ตีโต้ได้</span>;
+      case 'Intermediate':
+        return <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">🔥 ระดับกลาง</span>;
+      case 'Advanced':
+        return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">👑 มือโปร</span>;
+      default:
+        return <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold">{level}</span>;
+    }
+  };
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans bg-gray-50 min-h-screen pb-20">
       <div className="bg-[#0f172a] text-white p-8 rounded-3xl shadow-md mb-6">
@@ -206,9 +222,9 @@ const CheckInPage = () => {
                             )}
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-gray-700">{c.profiles?.display_name || 'ไม่ระบุชื่อ'}</span>
-                              {c.profiles?.skill_level && (
-                                <span className="text-[9px] text-gray-400">{c.profiles.skill_level}</span>
-                              )}
+                              <div className="mt-0.5">
+                                {renderSkillBadge(c.profiles?.skill_level)}
+                              </div>
                             </div>
                           </div>
                         ))}
