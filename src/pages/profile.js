@@ -229,6 +229,30 @@ const ProfileLevel = () => {
       >
         {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
       </button>
+        {/* ปุ่มสำหรับทดสอบล้างข้อมูล */}
+<button 
+  onClick={async () => {
+    if (!confirm('ต้องการล้างข้อมูลโปรไฟล์และออกจากระบบเพื่อทดสอบใหม่ใช่ไหม?')) return;
+    
+    // 1. ล้างข้อมูลให้กลับไปเป็นค่าว่าง (null)
+    await supabase.from('profiles').update({ 
+      skill_level: null, 
+      gender: null, 
+      hand_preference: null,
+      line_id: null 
+    }).eq('id', session.user.id);
+    
+    // 2. ออกจากระบบ (Sign Out)
+    await supabase.auth.signOut();
+    
+    // 3. รีเฟรชหน้าเว็บ หรือพาไปหน้าแรก
+    window.location.href = '/';
+  }}
+  className="w-full mt-4 py-3 font-bold rounded-2xl bg-red-50 text-red-500 border-2 border-red-200 hover:bg-red-100 transition-all active:scale-95"
+>
+  🧹 รีเซ็ตข้อมูลโปรไฟล์ & ออกจากระบบ (สำหรับทดสอบ)
+</button>
+
     </div>
   );
 };
