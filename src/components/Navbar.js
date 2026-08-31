@@ -74,6 +74,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
           <NavLink href="/" label="หน้าหลัก" />
           <NavLink href="/checkin" label="เช็คอิน" />
+          <NavLink href="/members" label="👥 สมาชิก"/>
           {canCreateGroup ? (
             <NavLink href="/create-group" label="+ สร้างก๊วน" />
           ) : (
@@ -89,6 +90,7 @@ const Navbar = () => {
         <div className="md:hidden flex flex-col items-center gap-2 mt-4 bg-slate-50 p-4 rounded-2xl border border-gray-100 shadow-inner animation-fade-in">
           <NavLink href="/" label="หน้าหลัก" onClick={handleCloseMenu} />
           <NavLink href="/checkin" label="เช็คอิน" onClick={handleCloseMenu} />
+          <NavLink href="/members" label="👥 สมาชิก" onClick={handleCloseMenu} />
           {canCreateGroup ? (
             <NavLink href="/create-group" label="+ สร้างก๊วน" onClick={handleCloseMenu} />
           ) : (
