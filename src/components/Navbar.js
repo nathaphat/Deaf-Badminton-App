@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { supabase } from '../logic/supabaseClient';
+import { useRouter } from 'next/router'; // เพิ่มบรรทัดนี้เข้ามา
 
 // ปรับ NavLink ให้รับ onClick ได้ (เพื่อปิดเมนูเวลากดเลือกลิงก์ในมือถือ)
 const NavLink = ({ href, label, onClick }) => (
@@ -16,15 +17,32 @@ const NavLink = ({ href, label, onClick }) => (
 
 const Navbar = () => {
   const { data: session } = useSession();
+  const router = useRouter();
   const [canCreateGroup, setCanCreateGroup] = useState(true);
-  
-  // 1. เพิ่ม State สำหรับเปิด/ปิดเมนูมือถือ
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   useEffect(() => {
     const checkGroupQuota = async () => {
       if (session?.user?.id) {
         try {
+          // 1. 🛡️ ตรวจสอบว่ามีโปรไฟล์หรือยัง (ถ้ายังไม่มี ให้เด้งไปหน้า Profile)
+          // ต้องเช็กด้วยว่าตอนนี้ไม่ได้อยู่หน้า /profile อยู่แล้ว (ไม่งั้นจะติดลูป)
+          if (router.pathname !== '/profile') {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('skill_level')
+              .eq('id', session.user.id)
+              .single();
+
+            // ถ้าหาข้อมูลไม่เจอ หรือยังไม่ได้เลือกระดับฝีมือ (skill_level เป็น null)
+            if (profileError || !profileData || !profileData.skill_level) {
+              alert('👋 ยินดีต้อนรับครับ! กรุณาสร้างโปรไฟล์และระบุระดับฝีมือก่อนเริ่มใช้งานนะครับ');
+              router.push('/profile'); // บังคับเปลี่ยนหน้าไปที่ /profile
+              return; // หยุดการทำงานส่วนอื่นไปเลย
+            }
+          }
+          
+          // 2. ตรวจสอบสิทธิ์การสร้างก๊วน
           const { count, error } = await supabase
             .from('badminton_groups')
             .select('*', { count: 'exact', head: true })
@@ -33,13 +51,14 @@ const Navbar = () => {
           if (count > 0) {
             setCanCreateGroup(false);
           }
+          
         } catch (err) {
           console.error("Error:", err.message);
         }
       }
     };
     checkGroupQuota();
-  }, [session]);
+  }, [session, router.pathname ]);
 
   // ฟังก์ชันสำหรับปิดเมนูมือถือเวลาที่ผู้ใช้กดลิงก์แล้ว
   const handleCloseMenu = () => setIsMobileMenuOpen(false);
