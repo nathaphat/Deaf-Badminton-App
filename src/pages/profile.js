@@ -46,22 +46,22 @@ const ProfileLevel = () => {
     try {
       const { error } = await supabase
         .from('profiles') 
-        .update({ 
+        .upsert({ 
+          id: session.user.id, // ต้องส่ง id ไปด้วยเพื่อให้รู้ว่าเป็นของใคร
           skill_level: selectedLevel,
           gender: gender,
-          hand_preference: handPref
-        })
-        .eq('id', session.user.id); 
+          hand_preference: handPref,
+          display_name: session.user.name, // กู้คืนชื่อจาก Line
+          avatar_url: session.user.image   // กู้คืนรูปภาพจาก Line
+        });
 
       if (error) throw error; 
       
       alert('✅ บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
-      
-      // ล็อกปุ่มไม่ให้เปลี่ยนอีก
+
       setIsGenderLocked(true);
       setIsHandPrefLocked(true);
-
-      // 4. 🚀 บันทึกสำเร็จให้เด้งกลับไปหน้าหลัก (หน้า Dashboard) ทันที
+      //🚀 บันทึกสำเร็จให้เด้งกลับไปหน้าหลัก (หน้า Dashboard) ทันที
       router.push('/');
       
     } catch (error) {
@@ -80,7 +80,7 @@ const ProfileLevel = () => {
             .from('profiles')
             .select('skill_level, avatar_url, gender, hand_preference')
             .eq('id', session.user.id)
-            .single(); 
+            .maybeSingle(); // 🛠️ เปลี่ยนจาก .single() เป็น .maybeSingle() ป้องกัน Error ถ้าหาไม่เจอ
 
           if (error) {
             console.error('Error fetching data:', error);
@@ -88,7 +88,8 @@ const ProfileLevel = () => {
           }
 
           if (data) {
-            if (data.avatar_url) setAvatarUrl(data.avatar_url);
+            // 🛠️ ถ้ารูปในฐานข้อมูลไม่มี ให้ดึงรูปจาก session (Line) มาโชว์แทน
+            setAvatarUrl(data.avatar_url || session.user.image);
             if (data.skill_level) setSelectedLevel(data.skill_level);
             if (data.gender) {
               setGender(data.gender);
@@ -98,6 +99,9 @@ const ProfileLevel = () => {
               setHandPref(data.hand_preference);
               setIsHandPrefLocked(true);
             }
+          } else {
+            // ถ้าไม่เจอข้อมูลเลย (ถูกลบ) ให้โชว์รูปล่าสุดจาก Line ไว้รอเซฟ
+            setAvatarUrl(session.user.image);
           }
           
         } catch (error) {
