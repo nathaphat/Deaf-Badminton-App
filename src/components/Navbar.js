@@ -32,7 +32,8 @@ const Navbar = () => {
               .from('profiles')
               .select('skill_level')
               .eq('id', session.user.id)
-              .single();
+              //.single();
+              .maybeSingle();
 
             // ถ้าหาข้อมูลไม่เจอ หรือยังไม่ได้เลือกระดับฝีมือ (skill_level เป็น null)
             if (profileError || !profileData || !profileData.skill_level) {
@@ -40,6 +41,7 @@ const Navbar = () => {
               router.push('/profile'); // บังคับเปลี่ยนหน้าไปที่ /profile
               return; // หยุดการทำงานส่วนอื่นไปเลย
             }
+            
           }
           
           // 2. ตรวจสอบสิทธิ์การสร้างก๊วน
