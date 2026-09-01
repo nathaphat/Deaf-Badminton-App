@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react'; 
 import { supabase } from '../logic/supabaseClient'; 
+import { useRouter } from 'next/router'; // 1. เพิ่ม useRouter สำหรับเปลี่ยนหน้า
 
 const ProfileLevel = () => {
   const { data: session, status } = useSession();
+  const router = useRouter(); // 2. เรียกใช้งาน router
 
   const [avatarUrl, setAvatarUrl] = useState('');
   const [gender, setGender] = useState(''); 
@@ -24,18 +26,25 @@ const ProfileLevel = () => {
   ];
 
   const handleSave = async () => {
-
     if (!session || !session.user) {
       alert('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+
+    // 3. 🛡️ เพิ่มระบบดักจับ บังคับให้เลือกให้ครบก่อน
+    if (!gender) {
+      alert('กรุณาระบุ "เพศ" ก่อนบันทึกข้อมูลครับ');
+      return;
+    }
+    if (!handPref) {
+      alert('กรุณาระบุ "ข้างที่ถนัด" ก่อนบันทึกข้อมูลครับ');
       return;
     }
 
     setIsSaving(true); 
 
     try {
-      console.log('กำลังส่งค่าไปฐานข้อมูล:', selectedLevel); 
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles') 
         .update({ 
           skill_level: selectedLevel,
@@ -44,14 +53,16 @@ const ProfileLevel = () => {
         })
         .eq('id', session.user.id); 
 
-      if (error) {
-        throw error; 
-      }
+      if (error) throw error; 
       
-      alert('บันทึกระดับฝีมือเรียบร้อยแล้ว!');
+      alert('✅ บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
       
-      if (gender) setIsGenderLocked(true);
-      if (handPref) setIsHandPrefLocked(true);
+      // ล็อกปุ่มไม่ให้เปลี่ยนอีก
+      setIsGenderLocked(true);
+      setIsHandPrefLocked(true);
+
+      // 4. 🚀 บันทึกสำเร็จให้เด้งกลับไปหน้าหลัก (หน้า Dashboard) ทันที
+      router.push('/');
       
     } catch (error) {
       console.error('Error updating profile:', error.message);
@@ -63,14 +74,13 @@ const ProfileLevel = () => {
   
   useEffect(() => {
     const fetchProfileData = async () => {
-      // ตรวจสอบว่าโหลด Session เสร็จแล้วและมี user id
       if (session?.user?.id) {
         try {
           const { data, error } = await supabase
             .from('profiles')
             .select('skill_level, avatar_url, gender, hand_preference')
             .eq('id', session.user.id)
-            .single(); // คาดหวังข้อมูลแค่แถวเดียว
+            .single(); 
 
           if (error) {
             console.error('Error fetching data:', error);
@@ -106,7 +116,6 @@ const ProfileLevel = () => {
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
       
-      {/* ส่วนแสดงรูปโปรไฟล์ (Avatar) */}
       <div className="flex flex-col items-center mb-8">
         {avatarUrl ? (
           <img 
@@ -124,10 +133,9 @@ const ProfileLevel = () => {
         </h2>
       </div>
 
-      {/* เพศ */}
       <div className="mb-6">
         <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
-          <span>เพศ</span>
+          <span>เพศ <span className="text-red-500">*</span></span>
           {isGenderLocked && <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">🔒 ไม่สามารถเปลี่ยนได้</span>}
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -152,10 +160,9 @@ const ProfileLevel = () => {
         </div>
       </div>
 
-      {/* มือที่ถนัด */}
       <div className="mb-8">
         <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
-          <span>ข้างที่ถนัด</span>
+          <span>ข้างที่ถนัด <span className="text-red-500">*</span></span>
           {isHandPrefLocked && <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">🔒 ไม่สามารถเปลี่ยนได้</span>}
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -180,7 +187,6 @@ const ProfileLevel = () => {
         </div>
       </div>
 
-      {/* ส่วนเลือกระดับฝีมือ */}
       <div className="mb-2">
         <label className="block text-sm font-bold text-gray-700 mb-3">ระดับฝีมือของคุณ</label>
         <div className="grid grid-cols-1 gap-3">
@@ -217,7 +223,6 @@ const ProfileLevel = () => {
         </div>
       </div>
 
-      {/* ปุ่มบันทึก */}
       <button 
         onClick={handleSave} 
         disabled={isSaving}
@@ -229,29 +234,23 @@ const ProfileLevel = () => {
       >
         {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
       </button>
-        {/* ปุ่มสำหรับทดสอบล้างข้อมูล */}
-<button 
-  onClick={async () => {
-    if (!confirm('ต้องการล้างข้อมูลโปรไฟล์และออกจากระบบเพื่อทดสอบใหม่ใช่ไหม?')) return;
-    
-    // 1. ล้างข้อมูลให้กลับไปเป็นค่าว่าง (null)
-    await supabase.from('profiles').update({ 
-      skill_level: null, 
-      gender: null, 
-      hand_preference: null,
-      line_id: null 
-    }).eq('id', session.user.id);
-    
-    // 2. ออกจากระบบ (Sign Out)
-    await supabase.auth.signOut();
-    
-    // 3. รีเฟรชหน้าเว็บ หรือพาไปหน้าแรก
-    window.location.href = '/';
-  }}
-  className="w-full mt-4 py-3 font-bold rounded-2xl bg-red-50 text-red-500 border-2 border-red-200 hover:bg-red-100 transition-all active:scale-95"
->
-  🧹 รีเซ็ตข้อมูลโปรไฟล์ & ออกจากระบบ (สำหรับทดสอบ)
-</button>
+
+      <button 
+        onClick={async () => {
+          if (!confirm('ต้องการล้างข้อมูลโปรไฟล์และออกจากระบบเพื่อทดสอบใหม่ใช่ไหม?')) return;
+          await supabase.from('profiles').update({ 
+            skill_level: null, 
+            gender: null, 
+            hand_preference: null,
+            line_id: null 
+          }).eq('id', session.user.id);
+          await supabase.auth.signOut();
+          window.location.href = '/';
+        }}
+        className="w-full mt-4 py-3 font-bold rounded-2xl bg-red-50 text-red-500 border-2 border-red-200 hover:bg-red-100 transition-all active:scale-95"
+      >
+        🧹 รีเซ็ตข้อมูลโปรไฟล์ & ออกจากระบบ (สำหรับทดสอบ)
+      </button>
 
     </div>
   );
