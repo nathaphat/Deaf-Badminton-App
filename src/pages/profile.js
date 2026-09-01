@@ -239,23 +239,6 @@ const ProfileLevel = () => {
         {isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
       </button>
 
-      <button 
-        onClick={async () => {
-          if (!confirm('ต้องการล้างข้อมูลโปรไฟล์และออกจากระบบเพื่อทดสอบใหม่ใช่ไหม?')) return;
-          await supabase.from('profiles').update({ 
-            skill_level: null, 
-            gender: null, 
-            hand_preference: null,
-            line_id: null 
-          }).eq('id', session.user.id);
-          await supabase.auth.signOut();
-          window.location.href = '/';
-        }}
-        className="w-full mt-4 py-3 font-bold rounded-2xl bg-red-50 text-red-500 border-2 border-red-200 hover:bg-red-100 transition-all active:scale-95"
-      >
-        🧹 รีเซ็ตข้อมูลโปรไฟล์ & ออกจากระบบ (สำหรับทดสอบ)
-      </button>
-
     </div>
   );
 };
