@@ -14,26 +14,44 @@ const LiveMatchPage = () => {
   const [activeSession, setActiveSession] = useState(null);
   const [waitingPlayers, setWaitingPlayers] = useState([]);
   const [activeMatches, setActiveMatches] = useState([]);
+  const [shuttleList, setShuttleList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // State ชั่วคราวสำหรับเก็บค่าที่กำลังแก้ในแต่ละ Match การ์ด
+  const [matchDetails, setMatchDetails] = useState({});
 
   const fetchMatchData = async () => {
     setIsLoading(true);
     const today = new Date().toISOString().split('T')[0];
     
     try {
+      // 1. ดึงรอบของวันนี้ พร้อมข้อมูลลูกแบดเริ่มต้นของรอบ
       const { data: sessionData } = await supabase
         .from('group_sessions')
-        .select('id, badminton_groups(name, organizer_id)') 
+        .select(`
+          id, 
+          shuttlecock_id,
+          badminton_groups(name, organizer_id)
+        `) 
         .eq('play_date', today)
         .single();
 
       if (!sessionData) return setIsLoading(false);
       setActiveSession(sessionData);
 
+      // 2. ดึงรายการยี่ห้อลูกแบดทั้งหมด
+      const { data: shuttles } = await supabase
+        .from('shuttlecocks')
+        .select('*')
+        .order('id', { ascending: true });
+      setShuttleList(shuttles || []);
+
+      // 3. ดึงแมตช์ทั้งหมด
       const { data: matches } = await supabase
         .from('matches')
         .select(`
-          id, status, winner,
+          id, status, winner, shuttle_number, shuttlecocks_used, shuttlecock_id,
+          shuttlecock:shuttlecock_id(brand_name, price_per_shuttle),
           p_a1:team_a_1(display_name, skill_level),
           p_a2:team_a_2(display_name, skill_level),
           p_b1:team_b_1(display_name, skill_level),
@@ -44,6 +62,18 @@ const LiveMatchPage = () => {
 
       setActiveMatches(matches || []);
 
+      // เซ็ตค่าเริ่มต้นของฟอร์มลูกแบดในแต่ละแมตช์
+      const initialDetails = {};
+      matches?.forEach(m => {
+        initialDetails[m.id] = {
+          shuttlecock_id: m.shuttlecock_id || sessionData.shuttlecock_id || (shuttles?.[0]?.id || ''),
+          shuttle_number: m.shuttle_number || '',
+          shuttlecocks_used: m.shuttlecocks_used || 1
+        };
+      });
+      setMatchDetails(initialDetails);
+
+      // 4. ดึงรายชื่อคนที่รอคิว
       const { data: checkins } = await supabase
         .from('checkins')
         .select('player_id, profiles(id, display_name, skill_level)')
@@ -98,6 +128,8 @@ const LiveMatchPage = () => {
             session_id: activeSession.id,
             team_a_1: teamA1, team_a_2: teamA2,
             team_b_1: teamB1, team_b_2: teamB2,
+            shuttlecock_id: activeSession.shuttlecock_id || (shuttleList[0]?.id || null),
+            shuttlecocks_used: 1,
             status: 'playing'
           }]);
           alert('🏸 จับคู่สำเร็จ 1 คอร์ท!');
@@ -116,15 +148,35 @@ const LiveMatchPage = () => {
     }
   };
 
+  const handleDetailChange = (matchId, field, value) => {
+    setMatchDetails(prev => ({
+      ...prev,
+      [matchId]: {
+        ...prev[matchId],
+        [field]: value
+      }
+    }));
+  };
+
   const handleSetWinner = async (matchId, winnerTeam) => {
+    const details = matchDetails[matchId] || {};
     try {
       await supabase
         .from('matches')
-        .update({ status: 'finished', winner: winnerTeam })
+        .update({ 
+          status: 'finished', 
+          winner: winnerTeam,
+          shuttlecock_id: details.shuttlecock_id ? Number(details.shuttlecock_id) : null,
+          shuttle_number: details.shuttle_number || null,
+          shuttlecocks_used: Number(details.shuttlecocks_used) || 1
+        })
         .eq('id', matchId);
+      
+      alert('✅ บันทึกผลและข้อมูลลูกแบดเรียบร้อย');
       fetchMatchData();
     } catch (error) {
       console.error(error);
+      alert('เกิดข้อผิดพลาด: ' + error.message);
     }
   };
 
@@ -134,21 +186,22 @@ const LiveMatchPage = () => {
   const isOrganizer = session?.user?.id === activeSession.badminton_groups?.organizer_id;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 font-sans pb-20">
-      <div className="bg-[#0f172a] text-white p-8 rounded-3xl shadow-md mb-8 flex justify-between items-center">
+    <div className="max-w-5xl mx-auto p-4 font-sans pb-24">
+      {/* Header */}
+      <div className="bg-[#0f172a] text-white p-6 md:p-8 rounded-3xl shadow-md mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black mb-2 flex items-center gap-2">
-            <span className="relative flex h-4 w-4">
+          <h1 className="text-2xl md:text-3xl font-black mb-1 flex items-center gap-2">
+            <span className="relative flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
             </span>
             Live Match
           </h1>
-          <p className="text-blue-200">จัดการแข่งขัน: {activeSession.badminton_groups?.name}</p>
+          <p className="text-blue-200 text-sm">จัดการแข่งขัน: {activeSession.badminton_groups?.name}</p>
         </div>
-        <div className="text-center bg-blue-900 p-4 rounded-2xl">
-          <div className="text-sm text-blue-200">คนรอตี</div>
-          <div className="text-3xl font-bold">{waitingPlayers.length}</div>
+        <div className="text-center bg-blue-900/80 px-5 py-3 rounded-2xl border border-blue-700">
+          <div className="text-xs text-blue-200 font-bold">คนรอตี</div>
+          <div className="text-2xl md:text-3xl font-black text-white">{waitingPlayers.length}</div>
         </div>
       </div>
 
@@ -156,77 +209,150 @@ const LiveMatchPage = () => {
         <div className="mb-8 text-center">
           <button 
             onClick={handleAutoMatch}
-            className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-700 active:scale-95 text-xl flex items-center justify-center gap-2 mx-auto w-full md:w-auto"
+            className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-700 active:scale-95 text-lg flex items-center justify-center gap-2 mx-auto w-full md:w-auto transition-all"
           >
             <span>⚡ จับคู่อัตโนมัติ (สุ่มคนว่าง)</span>
           </button>
-          <p className="text-sm text-gray-500 mt-2">ระบบจะจับคู่คนระดับเดียวกัน หรือห่างกันไม่เกิน 1 ระดับ</p>
         </div>
       ) : (
         <div className="mb-8 text-center bg-blue-50 p-4 rounded-2xl border border-blue-100">
-          <p className="text-blue-800 font-bold flex items-center justify-center gap-2">
+          <p className="text-blue-800 font-bold flex items-center justify-center gap-2 text-sm">
             👀 โหมดผู้ชม (กำลังรอกรรมการจัดคอร์ท)
           </p>
         </div>
       )}
 
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">คอร์ทที่กำลังตี / ผลการแข่งขัน</h2>
+      <h2 className="text-xl font-black text-gray-800 mb-4">กระดานคอร์ทแข่งขัน</h2>
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {activeMatches.map(match => (
-          <div key={match.id} className={`p-6 rounded-3xl border-2 ${match.status === 'playing' ? 'bg-white border-blue-400 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-80'}`}>
-            
-            <div className="flex justify-between items-center mb-4">
-              <span className={`px-3 py-1 text-xs font-bold rounded-full ${match.status === 'playing' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
-                {match.status === 'playing' ? '🔥 กำลังแข่งขัน' : '✅ จบเกม'}
-              </span>
+        {activeMatches.map(match => {
+          const details = matchDetails[match.id] || {};
+          const isPlaying = match.status === 'playing';
+
+          return (
+            <div key={match.id} className={`p-6 rounded-3xl border-2 transition-all ${isPlaying ? 'bg-white border-blue-400 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-90'}`}>
               
-              {/* ปรับปรุงการแสดงผลลัพธ์ให้รองรับ "เสมอ" */}
-              {match.winner && (
-                <span className={`text-sm font-bold ${match.winner === 'Draw' ? 'text-gray-600' : 'text-green-600'}`}>
-                  {match.winner === 'Draw' ? '🤝 เสมอกัน' : `🏆 ทีม ${match.winner} ชนะ`}
+              {/* แถบสถานะด้านบน */}
+              <div className="flex justify-between items-center mb-4">
+                <span className={`px-3 py-1 text-xs font-bold rounded-full ${isPlaying ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
+                  {isPlaying ? '🔥 กำลังแข่งขัน' : '✅ จบเกมแล้ว'}
                 </span>
+                
+                {match.winner && (
+                  <span className={`text-sm font-black ${match.winner === 'Draw' ? 'text-gray-600' : 'text-green-600'}`}>
+                    {match.winner === 'Draw' ? '🤝 เสมอกัน' : `🏆 ทีม ${match.winner} ชนะ`}
+                  </span>
+                )}
+              </div>
+
+              {/* รายชื่อคู่แข่งขัน */}
+              <div className="flex justify-between items-center text-center mb-4">
+                <div className="flex-1 p-3 bg-red-50 rounded-2xl border border-red-100">
+                  <div className="font-black text-red-600 text-xs mb-1 uppercase tracking-wider">TEAM A</div>
+                  <div className="text-sm font-bold text-gray-800 truncate">{match.p_a1?.display_name || '-'}</div>
+                  <div className="text-sm font-bold text-gray-800 truncate">{match.p_a2?.display_name || '-'}</div>
+                </div>
+                <div className="px-3 font-black text-gray-300 text-lg">VS</div>
+                <div className="flex-1 p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                  <div className="font-black text-blue-600 text-xs mb-1 uppercase tracking-wider">TEAM B</div>
+                  <div className="text-sm font-bold text-gray-800 truncate">{match.p_b1?.display_name || '-'}</div>
+                  <div className="text-sm font-bold text-gray-800 truncate">{match.p_b2?.display_name || '-'}</div>
+                </div>
+              </div>
+
+              {/* 🪶 ส่วนจัดการลูกแบด (เลือกยี่ห้อ + เลขลูก + จำนวน) */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 mb-4 text-xs space-y-2.5">
+                <div className="font-bold text-slate-700 flex items-center gap-1">
+                  <span>🪶 ข้อมูลลูกแบดที่ใช้ในแมตช์นี้:</span>
+                </div>
+
+                {isPlaying && isOrganizer ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {/* เลือกยี่ห้อ */}
+                    <div>
+                      <label className="block text-[10px] text-gray-500 font-bold mb-1">ยี่ห้อลูกแบด</label>
+                      <select
+                        value={details.shuttlecock_id || ''}
+                        onChange={(e) => handleDetailChange(match.id, 'shuttlecock_id', e.target.value)}
+                        className="w-full p-2 bg-white border border-gray-300 rounded-xl font-medium outline-none focus:border-blue-500"
+                      >
+                        {shuttleList.map(s => (
+                          <option key={s.id} value={s.id}>{s.brand_name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* เลขที่เขียนบนลูก */}
+                    <div>
+                      <label className="block text-[10px] text-gray-500 font-bold mb-1">เลข/รหัสบนลูก (เช่น 01, A2)</label>
+                      <input
+                        type="text"
+                        value={details.shuttle_number || ''}
+                        onChange={(e) => handleDetailChange(match.id, 'shuttle_number', e.target.value)}
+                        placeholder="เบอร์ลูก..."
+                        className="w-full p-2 bg-white border border-gray-300 rounded-xl font-bold outline-none focus:border-blue-500 text-center"
+                      />
+                    </div>
+
+                    {/* จำนวนลูกที่ใช้ */}
+                    <div>
+                      <label className="block text-[10px] text-gray-500 font-bold mb-1">จำนวนลูกที่ใช้</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={details.shuttlecocks_used || 1}
+                        onChange={(e) => handleDetailChange(match.id, 'shuttlecocks_used', e.target.value)}
+                        className="w-full p-2 bg-white border border-gray-300 rounded-xl font-black outline-none focus:border-blue-500 text-center text-blue-600"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // แสดงผลตอนจบเกม หรือคนดูทั่วไป
+                  <div className="flex flex-wrap items-center justify-between text-gray-600 gap-2 font-medium">
+                    <div>
+                      <span>ยี่ห้อ: </span>
+                      <b className="text-gray-800">{match.shuttlecock?.brand_name || 'ตามรอบก๊วน'}</b>
+                    </div>
+                    {match.shuttle_number && (
+                      <div className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
+                        ลูกเบอร์: #{match.shuttle_number}
+                      </div>
+                    )}
+                    <div>
+                      <span>ใช้ไป: </span>
+                      <b className="text-blue-600 font-bold">{match.shuttlecocks_used || 1} ลูก</b>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ปุ่มบันทึกผลการแข่งขัน */}
+              {isPlaying && isOrganizer && (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleSetWinner(match.id, 'A')}
+                    className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded-xl text-xs sm:text-sm transition-colors border border-red-200"
+                  >
+                    TEAM A ชนะ
+                  </button>
+                  <button 
+                    onClick={() => handleSetWinner(match.id, 'Draw')}
+                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs sm:text-sm transition-colors border border-gray-200"
+                  >
+                    เสมอ
+                  </button>
+                  <button 
+                    onClick={() => handleSetWinner(match.id, 'B')}
+                    className="flex-1 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs sm:text-sm transition-colors border border-blue-200"
+                  >
+                    TEAM B ชนะ
+                  </button>
+                </div>
               )}
             </div>
-
-            <div className="flex justify-between items-center text-center">
-              <div className="flex-1 p-4 bg-red-50 rounded-2xl">
-                <div className="font-black text-red-600 mb-2">TEAM A</div>
-                <div className="text-sm font-medium">{match.p_a1?.display_name || '-'}</div>
-                <div className="text-sm font-medium">{match.p_a2?.display_name || '-'}</div>
-              </div>
-              <div className="px-4 font-black text-gray-400 text-xl">VS</div>
-              <div className="flex-1 p-4 bg-blue-50 rounded-2xl">
-                <div className="font-black text-blue-600 mb-2">TEAM B</div>
-                <div className="text-sm font-medium">{match.p_b1?.display_name || '-'}</div>
-                <div className="text-sm font-medium">{match.p_b2?.display_name || '-'}</div>
-              </div>
-            </div>
-
-            {/* เพิ่มปุ่ม "เสมอ" ตรงกลาง */}
-            {match.status === 'playing' && isOrganizer && (
-              <div className="mt-6 flex gap-2">
-                <button 
-                  onClick={() => handleSetWinner(match.id, 'A')}
-                  className="flex-1 py-3 bg-red-100 text-red-700 font-bold rounded-xl hover:bg-red-200 transition-colors"
-                >
-                  TEAM A ชนะ
-                </button>
-                <button 
-                  onClick={() => handleSetWinner(match.id, 'Draw')}
-                  className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
-                >
-                  เสมอ
-                </button>
-                <button 
-                  onClick={() => handleSetWinner(match.id, 'B')}
-                  className="flex-1 py-3 bg-blue-100 text-blue-700 font-bold rounded-xl hover:bg-blue-200 transition-colors"
-                >
-                  TEAM B ชนะ
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
