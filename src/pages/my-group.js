@@ -10,7 +10,7 @@ const MyGroupDashboard = () => {
 
   // Form State
   const [playDate, setPlayDate] = useState('');
-  const [closeTime, setCloseTime] = useState('');
+  const [closeDate, setCloseDate] = useState(''); // 👈 เลือกแค่วันที่ปิดรับ
   const [maxPlayers, setMaxPlayers] = useState(45);
   const [courtFee, setCourtFee] = useState(120);
   const [selectedShuttleId, setSelectedShuttleId] = useState('');
@@ -22,7 +22,6 @@ const MyGroupDashboard = () => {
     const fetchOrganizerData = async () => {
       if (session?.user?.id) {
         try {
-          // 1. ดึงข้อมูลก๊วน
           const { data: groupData, error: groupError } = await supabase
             .from('badminton_groups')
             .select('*')
@@ -32,7 +31,6 @@ const MyGroupDashboard = () => {
           if (!groupError && groupData) {
             setGroup(groupData);
 
-            // 2. ดึงรอบวันที่เปิด พร้อมข้อมูลยี่ห้อลูกแบด
             const { data: sessionData } = await supabase
               .from('group_sessions')
               .select(`
@@ -45,7 +43,6 @@ const MyGroupDashboard = () => {
             if (sessionData) setSessions(sessionData);
           }
 
-          // 3. ดึงรายชื่อยี่ห้อลูกแบดทั้งหมด
           const { data: shuttleData } = await supabase
             .from('shuttlecocks')
             .select('*')
@@ -70,12 +67,15 @@ const MyGroupDashboard = () => {
 
   const handleOpenSession = async (e) => {
     e.preventDefault();
-    if (!playDate || !closeTime) return alert('กรุณาระบุวันที่ตี และเวลาปิดรับให้ครบครับ');
+    if (!playDate || !closeDate) return alert('กรุณาระบุวันที่ตี และวันที่ปิดรับให้ครบครับ');
 
-    // เช็กว่าเวลาปิดรับ ต้องไม่ช้ากว่าวันที่ตี
-    if (new Date(closeTime) > new Date(playDate + 'T23:59:59')) {
-      return alert('เวลาปิดรับลงชื่อ ต้องอยู่ก่อนหรือภายในวันที่ตีแบดครับ');
+    // เช็กว่าวันที่ปิดรับ ต้องไม่ช้ากว่าวันที่ตี
+    if (closeDate > playDate) {
+      return alert('วันที่ปิดรับลงชื่อ ต้องไม่เกินวันที่ตีแบดครับ');
     }
+
+    // 🕒 ตั้งเวลาปิดรับอัตโนมัติเป็น 23:59:59 ของวันที่เลือก
+    const fullCloseTime = `${closeDate}T23:59:59`;
 
     setIsSaving(true);
     try {
@@ -84,7 +84,7 @@ const MyGroupDashboard = () => {
         .insert([{
           group_id: group.id,
           play_date: playDate,
-          checkin_close_time: closeTime,
+          checkin_close_time: fullCloseTime,
           max_players: Number(maxPlayers),
           court_fee_per_person: Number(courtFee) || 0,
           shuttlecock_id: selectedShuttleId ? Number(selectedShuttleId) : null,
@@ -99,7 +99,7 @@ const MyGroupDashboard = () => {
 
       setSessions([data[0], ...sessions]);
       setPlayDate('');
-      setCloseTime('');
+      setCloseDate('');
       alert('📅 เปิดรอบวันตีแบดสำเร็จ!');
     } catch (error) {
       alert('เกิดข้อผิดพลาด: ' + error.message);
@@ -119,9 +119,9 @@ const MyGroupDashboard = () => {
     }
   };
 
-  if (status === 'loading' || isLoading) return <div className="text-center p-12">กำลังโหลดข้อมูล...</div>;
+  if (status === 'loading' || isLoading) return <div className="text-center p-12 font-sans">กำลังโหลดข้อมูล...</div>;
   if (!group) return (
-    <div className="max-w-md mx-auto p-8 bg-white rounded-3xl shadow-lg text-center mt-12">
+    <div className="max-w-md mx-auto p-8 bg-white rounded-3xl shadow-lg text-center mt-12 font-sans">
       <h2 className="text-xl font-bold mb-2">ยังไม่มีเพจก๊วนของคุณ</h2>
       <a href="/create-group" className="inline-block px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl">
         + ไปหน้าสร้างก๊วน
@@ -139,26 +139,30 @@ const MyGroupDashboard = () => {
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8">
         <h2 className="text-lg font-bold text-gray-800 mb-4">➕ เปิดรอบวันตีแบดใหม่</h2>
         <form onSubmit={handleOpenSession} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
           {/* วันที่ตี */}
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">วันที่ตีแบด 📅</label>
             <input 
               type="date" 
               value={playDate} 
-              onChange={(e) => setPlayDate(e.target.value)} 
-              className="w-full p-3 border-2 rounded-xl text-sm" 
+              onChange={(e) => {
+                setPlayDate(e.target.value);
+                if (!closeDate) setCloseDate(e.target.value); // เซ็ตวันปิดรับเป็นวันเดียวกันให้อัตโนมัติ
+              }} 
+              className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500" 
               required 
             />
           </div>
 
-          {/* เวลาปิดรับ */}
-          <div className="lg:col-span-2">
-            <label className="block text-xs font-bold text-red-500 mb-1">วัน-เวลา ปิดลงชื่อ (ล็อกยกเลิก) ⏰</label>
+          {/* วันที่ปิดรับ (เลือกแค่วันที่ ไม่ต้องเลือกเวลา) */}
+          <div>
+            <label className="block text-xs font-bold text-red-500 mb-1">วันที่ปิดรับลงชื่อ 🔒</label>
             <input 
-              type="datetime-local" 
-              value={closeTime} 
-              onChange={(e) => setCloseTime(e.target.value)} 
-              className="w-full p-3 border-2 border-red-200 bg-red-50 rounded-xl text-sm" 
+              type="date" 
+              value={closeDate} 
+              onChange={(e) => setCloseDate(e.target.value)} 
+              className="w-full p-3 border-2 border-red-200 bg-red-50 rounded-xl text-sm outline-none focus:border-red-500" 
               required 
             />
           </div>
@@ -170,33 +174,33 @@ const MyGroupDashboard = () => {
               type="number" 
               value={maxPlayers} 
               onChange={(e) => setMaxPlayers(e.target.value)} 
-              className="w-full p-3 border-2 rounded-xl text-sm" 
+              className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500" 
               min="1" 
               required 
             />
           </div>
 
           {/* ค่าสนามต่อคน */}
-          <div className="md:col-span-2">
+          <div>
             <label className="block text-xs font-bold text-blue-600 mb-1">🏟️ ค่าสนามต่อคน (บาท)</label>
             <input 
               type="number" 
               value={courtFee} 
               onChange={(e) => setCourtFee(e.target.value)} 
               placeholder="120"
-              className="w-full p-3 border-2 border-blue-200 rounded-xl text-sm font-bold text-blue-700" 
+              className="w-full p-3 border-2 border-blue-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:border-blue-500" 
               min="0"
               required 
             />
           </div>
 
           {/* ยี่ห้อลูกแบด */}
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-gray-600 mb-1">🪶 ยี่ห้อลูกแบดที่ใช้รอบนี้</label>
+          <div className="lg:col-span-4">
+            <label className="block text-xs font-bold text-gray-600 mb-1">🪶 ยี่ห้อลูกแบดหลักของรอบนี้</label>
             <select 
               value={selectedShuttleId} 
               onChange={(e) => setSelectedShuttleId(e.target.value)} 
-              className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm font-medium bg-white"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl text-sm font-medium bg-white outline-none focus:border-blue-500"
             >
               {shuttleList.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -218,6 +222,7 @@ const MyGroupDashboard = () => {
         </form>
       </div>
 
+      {/* ประวัติรอบที่เปิดไว้ */}
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
         <h2 className="text-lg font-bold text-gray-800 mb-4 flex justify-between items-center">
           <span>📋 รอบวันที่เปิดไว้</span>
@@ -231,7 +236,9 @@ const MyGroupDashboard = () => {
               <div key={s.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-2xl bg-gray-50 gap-3">
                 <div>
                   <div className="font-bold text-gray-800 text-base">📅 วันที่ตี: {s.play_date} (รับ {s.max_players} คน)</div>
-                  <div className="text-xs text-red-500 mt-0.5">⏰ หมดเวลาลงชื่อ/ยกเลิก: {new Date(s.checkin_close_time).toLocaleString('th-TH')}</div>
+                  <div className="text-xs text-red-500 mt-0.5">
+                    🔒 ปิดรับลงชื่อ: {new Date(s.checkin_close_time).toLocaleDateString('th-TH')} (สิ้นสุดวัน)
+                  </div>
                   <div className="text-xs text-gray-600 mt-1 flex flex-wrap gap-x-4">
                     <span>🏟️ ค่าสนาม: <b className="text-gray-800">{s.court_fee_per_person || 0} บ./คน</b></span>
                     <span>🪶 ลูกแบด: <b className="text-gray-800">{s.shuttlecock?.brand_name || 'ไม่ได้ระบุ'}</b></span>
