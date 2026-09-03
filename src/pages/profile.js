@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react'; 
 import { supabase } from '../logic/supabaseClient'; 
-import { useRouter } from 'next/router'; // 1. เพิ่ม useRouter สำหรับเปลี่ยนหน้า
+import { useRouter } from 'next/router';
 
 const ProfileLevel = () => {
   const { data: session, status } = useSession();
-  const router = useRouter(); // 2. เรียกใช้งาน router
+  const router = useRouter();
 
+  const [displayName, setDisplayName] = useState('');
+  const [lineName, setLineName] = useState('');
+  const [lineId, setLineId] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [gender, setGender] = useState(''); 
   const [handPref, setHandPref] = useState('');
-  
   const [selectedLevel, setSelectedLevel] = useState('Beginner'); 
   
   const [isGenderLocked, setIsGenderLocked] = useState(false);
@@ -31,15 +33,9 @@ const ProfileLevel = () => {
       return;
     }
 
-    // 3. 🛡️ เพิ่มระบบดักจับ บังคับให้เลือกให้ครบก่อน
-    if (!gender) {
-      alert('กรุณาระบุ "เพศ" ก่อนบันทึกข้อมูลครับ');
-      return;
-    }
-    if (!handPref) {
-      alert('กรุณาระบุ "ข้างที่ถนัด" ก่อนบันทึกข้อมูลครับ');
-      return;
-    }
+    if (!displayName.trim()) return alert('กรุณาระบุชื่อที่ใช้แสดงในระบบครับ');
+    if (!gender) return alert('กรุณาระบุ "เพศ" ก่อนบันทึกข้อมูลครับ');
+    if (!handPref) return alert('กรุณาระบุ "ข้างที่ถนัด" ก่อนบันทึกข้อมูลครับ');
 
     setIsSaving(true); 
 
@@ -47,21 +43,21 @@ const ProfileLevel = () => {
       const { error } = await supabase
         .from('profiles') 
         .upsert({ 
-          id: session.user.id, // ต้องส่ง id ไปด้วยเพื่อให้รู้ว่าเป็นของใคร
+          id: session.user.id,
+          display_name: displayName.trim(),
+          line_name: lineName || session.user.name, // สำรองชื่อ Line
+          line_id: lineId.trim() || null,
           skill_level: selectedLevel,
           gender: gender,
           hand_preference: handPref,
-          display_name: session.user.name, // กู้คืนชื่อจาก Line
-          avatar_url: session.user.image   // กู้คืนรูปภาพจาก Line
-        });
+          avatar_url: avatarUrl || session.user.image
+        }); 
 
       if (error) throw error; 
       
       alert('✅ บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
-
       setIsGenderLocked(true);
       setIsHandPrefLocked(true);
-      //🚀 บันทึกสำเร็จให้เด้งกลับไปหน้าหลัก (หน้า Dashboard) ทันที
       router.push('/');
       
     } catch (error) {
@@ -78,9 +74,9 @@ const ProfileLevel = () => {
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('skill_level, avatar_url, gender, hand_preference')
+            .select('display_name, line_name, line_id, skill_level, avatar_url, gender, hand_preference')
             .eq('id', session.user.id)
-            .maybeSingle(); // 🛠️ เปลี่ยนจาก .single() เป็น .maybeSingle() ป้องกัน Error ถ้าหาไม่เจอ
+            .maybeSingle();
 
           if (error) {
             console.error('Error fetching data:', error);
@@ -88,8 +84,10 @@ const ProfileLevel = () => {
           }
 
           if (data) {
-            // 🛠️ ถ้ารูปในฐานข้อมูลไม่มี ให้ดึงรูปจาก session (Line) มาโชว์แทน
-            setAvatarUrl(data.avatar_url || session.user.image);
+            setDisplayName(data.display_name || session.user.name || '');
+            setLineName(data.line_name || session.user.name || '');
+            setLineId(data.line_id || '');
+            setAvatarUrl(data.avatar_url || session.user.image || '');
             if (data.skill_level) setSelectedLevel(data.skill_level);
             if (data.gender) {
               setGender(data.gender);
@@ -100,8 +98,9 @@ const ProfileLevel = () => {
               setIsHandPrefLocked(true);
             }
           } else {
-            // ถ้าไม่เจอข้อมูลเลย (ถูกลบ) ให้โชว์รูปล่าสุดจาก Line ไว้รอเซฟ
-            setAvatarUrl(session.user.image);
+            setDisplayName(session.user.name || '');
+            setLineName(session.user.name || '');
+            setAvatarUrl(session.user.image || '');
           }
           
         } catch (error) {
@@ -116,11 +115,16 @@ const ProfileLevel = () => {
 
     fetchProfileData();
   }, [session, status]);
+
+  if (isLoading) {
+    return <div className="text-center p-12 text-gray-500 font-sans">กำลังโหลดข้อมูลโปรไฟล์...</div>;
+  }
     
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100">
+    <div className="max-w-md mx-auto p-6 bg-white rounded-3xl shadow-xl border border-gray-100 my-6 font-sans">
       
-      <div className="flex flex-col items-center mb-8">
+      {/* รูปโปรไฟล์ */}
+      <div className="flex flex-col items-center mb-6">
         {avatarUrl ? (
           <img 
             src={avatarUrl} 
@@ -132,11 +136,43 @@ const ProfileLevel = () => {
             <span className="text-4xl">🏸</span>
           </div>
         )}
-        <h2 className="text-xl font-black text-gray-800 mt-4">
-          {session?.user?.name || 'ผู้ใช้งานแบดมินตัน'}
-        </h2>
       </div>
 
+      {/* ช่องแก้ไขชื่อแสดงผล & แสดงชื่อ Line สำรอง */}
+      <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          ชื่อที่ใช้ในก๊วน (ชื่อเล่น / ฉายา) <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder="เช่น กิ๊ก, นัท, บอมบ์"
+          className="w-full p-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-800 focus:border-blue-500 outline-none transition-colors"
+        />
+        {lineName && (
+          <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+            <span>💬 ชื่อใน LINE เดิม:</span> 
+            <span className="font-semibold text-gray-600 truncate">{lineName}</span>
+          </p>
+        )}
+      </div>
+
+      {/* ช่องใส่ LINE ID */}
+      <div className="mb-6">
+        <label className="block text-sm font-bold text-gray-700 mb-2">
+          LINE ID (สำหรับให้เพื่อนติดต่อ)
+        </label>
+        <input
+          type="text"
+          value={lineId}
+          onChange={(e) => setLineId(e.target.value)}
+          placeholder="ไอดีไลน์ของคุณ (ถ้ามี)"
+          className="w-full p-3 border-2 border-gray-200 rounded-xl text-gray-800 focus:border-blue-500 outline-none transition-colors text-sm"
+        />
+      </div>
+
+      {/* เพศ */}
       <div className="mb-6">
         <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
           <span>เพศ <span className="text-red-500">*</span></span>
@@ -144,6 +180,7 @@ const ProfileLevel = () => {
         </label>
         <div className="grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={() => setGender('Male')}
             disabled={isGenderLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
@@ -153,6 +190,7 @@ const ProfileLevel = () => {
             ชาย 👨
           </button>
           <button
+            type="button"
             onClick={() => setGender('Female')}
             disabled={isGenderLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
@@ -164,13 +202,15 @@ const ProfileLevel = () => {
         </div>
       </div>
 
-      <div className="mb-8">
+      {/* ข้างที่ถนัด */}
+      <div className="mb-6">
         <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
           <span>ข้างที่ถนัด <span className="text-red-500">*</span></span>
           {isHandPrefLocked && <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">🔒 ไม่สามารถเปลี่ยนได้</span>}
         </label>
         <div className="grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={() => setHandPref('Left')}
             disabled={isHandPrefLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
@@ -180,6 +220,7 @@ const ProfileLevel = () => {
             มือซ้าย 👈
           </button>
           <button
+            type="button"
             onClick={() => setHandPref('Right')}
             disabled={isHandPrefLocked}
             className={`py-3 rounded-xl font-bold border-2 transition-all ${
@@ -191,11 +232,13 @@ const ProfileLevel = () => {
         </div>
       </div>
 
-      <div className="mb-2">
+      {/* ส่วนเลือกระดับฝีมือ */}
+      <div className="mb-6">
         <label className="block text-sm font-bold text-gray-700 mb-3">ระดับฝีมือของคุณ</label>
         <div className="grid grid-cols-1 gap-3">
           {levels.map((level) => (
             <button
+              type="button"
               key={level.id}
               onClick={() => setSelectedLevel(level.dbValue)}
               className={`flex items-center p-4 rounded-[1.5rem] border-2 transition-all duration-300 ${
@@ -227,10 +270,12 @@ const ProfileLevel = () => {
         </div>
       </div>
 
+      {/* ปุ่มบันทึก */}
       <button 
+        type="button"
         onClick={handleSave} 
         disabled={isSaving}
-        className={`w-full mt-8 py-4 font-bold rounded-2xl transition-all shadow-lg active:scale-95 ${
+        className={`w-full mt-4 py-4 font-bold rounded-2xl transition-all shadow-lg active:scale-95 ${
           isSaving 
             ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
             : 'bg-blue-600 text-white hover:bg-blue-700'
