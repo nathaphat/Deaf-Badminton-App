@@ -18,7 +18,7 @@ const CheckInPage = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // 1. ปรับ Query ดึง checkin_close_time และชื่อผู้จัดก๊วน (profiles) เพิ่มเข้ามา
+      // 1. ดึงข้อมูลรอบก๊วน พร้อมค่าสนาม และ ยี่ห้อลูกแบด
       const { data: availableSessions, error: sessionError } = await supabase
         .from('group_sessions')
         .select(`
@@ -26,7 +26,9 @@ const CheckInPage = () => {
           play_date, 
           checkin_close_time, 
           max_players, 
+          court_fee_per_person,
           is_active,
+          shuttlecock:shuttlecock_id(brand_name, price_per_shuttle),
           badminton_groups ( 
             name,
             profiles ( display_name )
@@ -165,7 +167,7 @@ const CheckInPage = () => {
   };
 
   if (status === 'loading' || isLoading) {
-    return <div className="text-center p-10 flex justify-center items-center h-screen">กำลังค้นหาก๊วน...</div>;
+    return <div className="text-center p-10 flex justify-center items-center h-screen font-sans">กำลังค้นหาก๊วน...</div>;
   }
 
   return (
@@ -198,16 +200,29 @@ const CheckInPage = () => {
                     </span>
                   </div>
                   
-                  {/* 2. เพิ่มส่วนแสดงชื่อผู้จัด วันที่ และเวลาปิดรับลงชื่อ */}
-                  <div className="text-gray-500 text-sm mb-6 space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  {/* ข้อมูลผู้จัด วันที่ เวลาปิดรับ พร้อมค่าสนาม และ ยี่ห้อลูกแบด */}
+                  <div className="text-gray-600 text-sm mb-6 space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <div className="flex items-center gap-2">
                       👑 <span className="font-semibold text-gray-700">ผู้จัด:</span> {s.badminton_groups?.profiles?.display_name || 'ไม่ระบุ'}
                     </div>
                     <div className="flex items-center gap-2">
                       📅 <span className="font-semibold text-gray-700">วันที่ตี:</span> {s.play_date}
                     </div>
+
+                    {/* 🏟️ แสดงค่าสนาม และ 🪶 ลูกแบด */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 border-t border-slate-200/60 text-xs sm:text-sm">
+                      <div className="flex items-center gap-1.5">
+                        🏟️ <span className="font-semibold text-gray-700">ค่าสนาม:</span> 
+                        <b className="text-blue-700 font-bold">{s.court_fee_per_person || 0} บ./คน</b>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        🪶 <span className="font-semibold text-gray-700">ลูกแบด:</span> 
+                        <b className="text-slate-800 font-bold">{s.shuttlecock?.brand_name || 'ไม่ได้ระบุ'}</b>
+                      </div>
+                    </div>
+
                     {s.checkin_close_time && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
                         ⏰ <span className="font-semibold text-red-500">ปิดรับ:</span> {new Date(s.checkin_close_time).toLocaleString('th-TH')}
                       </div>
                     )}
