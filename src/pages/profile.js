@@ -72,15 +72,15 @@ const ProfileLevel = () => {
     const fetchProfileData = async () => {
       if (session?.user?.id) {
         try {
+          // ดึงข้อมูลทั้งหมดด้วย '*' ป้องกัน Error กรณีคอลัมน์ไม่ตรง
           const { data, error } = await supabase
             .from('profiles')
-            .select('display_name, line_name, line_id, skill_level, avatar_url, gender, hand_preference')
+            .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
 
           if (error) {
-            console.error('Error fetching data:', error);
-            return;
+            console.error('Error fetching data:', error.message);
           }
 
           if (data) {
@@ -98,6 +98,7 @@ const ProfileLevel = () => {
               setIsHandPrefLocked(true);
             }
           } else {
+            // ถ้ายังไม่มีโปรไฟล์ในระบบเลย ให้ดึงค่าเริ่มต้นจาก Line Session
             setDisplayName(session.user.name || '');
             setLineName(session.user.name || '');
             setAvatarUrl(session.user.image || '');
