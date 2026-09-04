@@ -20,12 +20,12 @@ const LiveMatchPage = () => {
   // State ชั่วคราวสำหรับเก็บค่าที่กำลังแก้ในแต่ละ Match การ์ด
   const [matchDetails, setMatchDetails] = useState({});
 
+  // 1. ดึงข้อมูลให้ดึง id ของผู้เล่น และ team_a_1, team_a_2 ออกมาด้วยตรงๆ
   const fetchMatchData = async () => {
     setIsLoading(true);
     const today = new Date().toISOString().split('T')[0];
     
     try {
-      // 1. ดึงรอบของวันนี้ พร้อมข้อมูลลูกแบดเริ่มต้นของรอบ
       const { data: sessionData } = await supabase
         .from('group_sessions')
         .select(`
@@ -39,30 +39,29 @@ const LiveMatchPage = () => {
       if (!sessionData) return setIsLoading(false);
       setActiveSession(sessionData);
 
-      // 2. ดึงรายการยี่ห้อลูกแบดทั้งหมด
       const { data: shuttles } = await supabase
         .from('shuttlecocks')
         .select('*')
         .order('id', { ascending: true });
       setShuttleList(shuttles || []);
 
-      // 3. ดึงแมตช์ทั้งหมด
+      // ดึง matches พร้อม id ผู้เล่น
       const { data: matches } = await supabase
         .from('matches')
         .select(`
           id, status, winner, shuttle_number, shuttlecocks_used, shuttlecock_id,
+          team_a_1, team_a_2, team_b_1, team_b_2,
           shuttlecock:shuttlecock_id(brand_name, price_per_shuttle),
-          p_a1:team_a_1(display_name, skill_level),
-          p_a2:team_a_2(display_name, skill_level),
-          p_b1:team_b_1(display_name, skill_level),
-          p_b2:team_b_2(display_name, skill_level)
+          p_a1:team_a_1(id, display_name, skill_level),
+          p_a2:team_a_2(id, display_name, skill_level),
+          p_b1:team_b_1(id, display_name, skill_level),
+          p_b2:team_b_2(id, display_name, skill_level)
         `)
         .eq('session_id', sessionData.id)
         .order('created_at', { ascending: false });
 
       setActiveMatches(matches || []);
 
-      // เซ็ตค่าเริ่มต้นของฟอร์มลูกแบดในแต่ละแมตช์
       const initialDetails = {};
       matches?.forEach(m => {
         initialDetails[m.id] = {
@@ -73,21 +72,25 @@ const LiveMatchPage = () => {
       });
       setMatchDetails(initialDetails);
 
-      // 4. ดึงรายชื่อคนที่รอคิว
+      // ดึง checkins
       const { data: checkins } = await supabase
         .from('checkins')
         .select('player_id, profiles(id, display_name, skill_level)')
         .eq('session_id', sessionData.id);
 
+      // 🛠️ แก้ไข: ใช้ team_a_1, team_a_2, team_b_1, team_b_2 ตรงๆ เพื่อกัน undefined
       const playingIds = new Set();
       matches?.filter(m => m.status === 'playing').forEach(m => {
-        playingIds.add(m.p_a1?.id); playingIds.add(m.p_a2?.id);
-        playingIds.add(m.p_b1?.id); playingIds.add(m.p_b2?.id);
+        if (m.team_a_1) playingIds.add(m.team_a_1);
+        if (m.team_a_2) playingIds.add(m.team_a_2);
+        if (m.team_b_1) playingIds.add(m.team_b_1);
+        if (m.team_b_2) playingIds.add(m.team_b_2);
       });
 
-      const available = checkins
+      // คัดกรองเอาเฉพาะคนที่ไม่ได้ติดแข่งในคอร์ทที่กำลังเล่นอยู่
+      const available = (checkins || [])
         .map(c => c.profiles)
-        .filter(p => !playingIds.has(p.id));
+        .filter(p => p && !playingIds.has(p.id));
 
       setWaitingPlayers(available);
     } catch (error) {
@@ -97,54 +100,121 @@ const LiveMatchPage = () => {
     }
   };
 
+  // 2. ปรับปรุงลอจิกจับคู่อัตโนมัติ (สุ่มจากคนที่ว่างจริง + เกลี่ยฝีมือ)
+  const handleAutoMatch = async () => {
+    if (waitingPlayers.length < 4) {
+      return alert(`มีคนว่างพร้อมเล่น ${waitingPlayers.length} คน (ต้องการอย่างน้อย 4 คนครับ)`);
+    }
+
+    // สลับลำดับแบบสุ่มเล็กน้อยเพื่อไม่ให้ได้หน้าเดิมตลอดเวลา
+    let pool = [...waitingPlayers].sort(() => Math.random() - 0.5);
+
+    // เรียงตามฝีมือจาก 4 คนที่เลือกมา
+    pool.sort((a, b) => (levelMap[a.skill_level] || 1) - (levelMap[b.skill_level] || 1));
+
+    // หยิบ 4 คนที่ระดับใกล้เคียงกันที่สุด
+    let bestGroup = null;
+    let minDiff = 999;
+
+    for (let i = 0; i <= pool.length - 4; i++) {
+      const group = pool.slice(i, i + 4);
+      const diff = Math.abs(
+        (levelMap[group[3].skill_level] || 1) - (levelMap[group[0].skill_level] || 1)
+      );
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestGroup = group;
+      }
+    }
+
+    if (!bestGroup) {
+      bestGroup = pool.slice(0, 4);
+    }
+
+    // จัดทีมแบบบาลานซ์: มือ 1 + มือ 4 ปะทะ มือ 2 + มือ 3
+    const teamA1 = bestGroup[0].id;
+    const teamA2 = bestGroup[3].id;
+    const teamB1 = bestGroup[1].id;
+    const teamB2 = bestGroup[2].id;
+
+    try {
+      await supabase.from('matches').insert([{
+        session_id: activeSession.id,
+        team_a_1: teamA1,
+        team_a_2: teamA2,
+        team_b_1: teamB1,
+        team_b_2: teamB2,
+        shuttlecock_id: activeSession.shuttlecock_id || (shuttleList[0]?.id || null),
+        shuttlecocks_used: 1,
+        status: 'playing'
+      }]);
+
+      alert('🏸 จับคู่สำเร็จ 1 คอร์ท!');
+      fetchMatchData();
+    } catch (error) {
+      console.error(error);
+      alert('เกิดข้อผิดพลาดในการจับคู่: ' + error.message);
+    }
+  };
+
   useEffect(() => {
     fetchMatchData();
   }, []);
 
+  // 2. ปรับปรุงลอจิกจับคู่อัตโนมัติ (สุ่มจากคนที่ว่างจริง + เกลี่ยฝีมือ)
   const handleAutoMatch = async () => {
-    if (waitingPlayers.length < 4) return alert('มีผู้เล่นรอไม่ถึง 4 คนครับ');
+    if (waitingPlayers.length < 4) {
+      return alert(`มีคนว่างพร้อมเล่น ${waitingPlayers.length} คน (ต้องการอย่างน้อย 4 คนครับ)`);
+    }
 
-    let sortedPlayers = [...waitingPlayers].sort((a, b) => 
-      (levelMap[a.skill_level] || 1) - (levelMap[b.skill_level] || 1)
-    );
+    // สลับลำดับแบบสุ่มเล็กน้อยเพื่อไม่ให้ได้หน้าเดิมตลอดเวลา
+    let pool = [...waitingPlayers].sort(() => Math.random() - 0.5);
 
-    let matchFound = false;
+    // เรียงตามฝีมือจาก 4 คนที่เลือกมา
+    pool.sort((a, b) => (levelMap[a.skill_level] || 1) - (levelMap[b.skill_level] || 1));
 
-    while (sortedPlayers.length >= 4) {
-      const group = sortedPlayers.slice(0, 4);
-      const levelDiff = Math.abs(
+    // หยิบ 4 คนที่ระดับใกล้เคียงกันที่สุด
+    let bestGroup = null;
+    let minDiff = 999;
+
+    for (let i = 0; i <= pool.length - 4; i++) {
+      const group = pool.slice(i, i + 4);
+      const diff = Math.abs(
         (levelMap[group[3].skill_level] || 1) - (levelMap[group[0].skill_level] || 1)
       );
-
-      if (levelDiff <= 1) {
-        matchFound = true;
-        const teamA1 = group[0].id;
-        const teamA2 = group[3].id;
-        const teamB1 = group[1].id;
-        const teamB2 = group[2].id;
-
-        try {
-          await supabase.from('matches').insert([{
-            session_id: activeSession.id,
-            team_a_1: teamA1, team_a_2: teamA2,
-            team_b_1: teamB1, team_b_2: teamB2,
-            shuttlecock_id: activeSession.shuttlecock_id || (shuttleList[0]?.id || null),
-            shuttlecocks_used: 1,
-            status: 'playing'
-          }]);
-          alert('🏸 จับคู่สำเร็จ 1 คอร์ท!');
-          fetchMatchData();
-          break; 
-        } catch (error) {
-          console.error(error);
-        }
-      } else {
-        sortedPlayers.shift();
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestGroup = group;
       }
     }
 
-    if (!matchFound) {
-      alert('ไม่สามารถจับคู่ได้ เนื่องจากระดับฝีมือคนที่รออยู่ห่างกันเกิน 1 ระดับครับ');
+    if (!bestGroup) {
+      bestGroup = pool.slice(0, 4);
+    }
+
+    // จัดทีมแบบบาลานซ์: มือ 1 + มือ 4 ปะทะ มือ 2 + มือ 3
+    const teamA1 = bestGroup[0].id;
+    const teamA2 = bestGroup[3].id;
+    const teamB1 = bestGroup[1].id;
+    const teamB2 = bestGroup[2].id;
+
+    try {
+      await supabase.from('matches').insert([{
+        session_id: activeSession.id,
+        team_a_1: teamA1,
+        team_a_2: teamA2,
+        team_b_1: teamB1,
+        team_b_2: teamB2,
+        shuttlecock_id: activeSession.shuttlecock_id || (shuttleList[0]?.id || null),
+        shuttlecocks_used: 1,
+        status: 'playing'
+      }]);
+
+      alert('🏸 จับคู่สำเร็จ 1 คอร์ท!');
+      fetchMatchData();
+    } catch (error) {
+      console.error(error);
+      alert('เกิดข้อผิดพลาดในการจับคู่: ' + error.message);
     }
   };
 
