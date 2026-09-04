@@ -16,11 +16,8 @@ const LiveMatchPage = () => {
   const [activeMatches, setActiveMatches] = useState([]);
   const [shuttleList, setShuttleList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // State ชั่วคราวสำหรับเก็บค่าที่กำลังแก้ในแต่ละ Match การ์ด
   const [matchDetails, setMatchDetails] = useState({});
 
-  // 1. ดึงข้อมูลให้ดึง id ของผู้เล่น และ team_a_1, team_a_2 ออกมาด้วยตรงๆ
   const fetchMatchData = async () => {
     setIsLoading(true);
     const today = new Date().toISOString().split('T')[0];
@@ -45,7 +42,6 @@ const LiveMatchPage = () => {
         .order('id', { ascending: true });
       setShuttleList(shuttles || []);
 
-      // ดึง matches พร้อม id ผู้เล่น
       const { data: matches } = await supabase
         .from('matches')
         .select(`
@@ -72,13 +68,11 @@ const LiveMatchPage = () => {
       });
       setMatchDetails(initialDetails);
 
-      // ดึง checkins
       const { data: checkins } = await supabase
         .from('checkins')
         .select('player_id, profiles(id, display_name, skill_level)')
         .eq('session_id', sessionData.id);
 
-      // 🛠️ แก้ไข: ใช้ team_a_1, team_a_2, team_b_1, team_b_2 ตรงๆ เพื่อกัน undefined
       const playingIds = new Set();
       matches?.filter(m => m.status === 'playing').forEach(m => {
         if (m.team_a_1) playingIds.add(m.team_a_1);
@@ -87,7 +81,6 @@ const LiveMatchPage = () => {
         if (m.team_b_2) playingIds.add(m.team_b_2);
       });
 
-      // คัดกรองเอาเฉพาะคนที่ไม่ได้ติดแข่งในคอร์ทที่กำลังเล่นอยู่
       const available = (checkins || [])
         .map(c => c.profiles)
         .filter(p => p && !playingIds.has(p.id));
@@ -100,80 +93,18 @@ const LiveMatchPage = () => {
     }
   };
 
-  // 2. ปรับปรุงลอจิกจับคู่อัตโนมัติ (สุ่มจากคนที่ว่างจริง + เกลี่ยฝีมือ)
-  const handleAutoMatch = async () => {
-    if (waitingPlayers.length < 4) {
-      return alert(`มีคนว่างพร้อมเล่น ${waitingPlayers.length} คน (ต้องการอย่างน้อย 4 คนครับ)`);
-    }
-
-    // สลับลำดับแบบสุ่มเล็กน้อยเพื่อไม่ให้ได้หน้าเดิมตลอดเวลา
-    let pool = [...waitingPlayers].sort(() => Math.random() - 0.5);
-
-    // เรียงตามฝีมือจาก 4 คนที่เลือกมา
-    pool.sort((a, b) => (levelMap[a.skill_level] || 1) - (levelMap[b.skill_level] || 1));
-
-    // หยิบ 4 คนที่ระดับใกล้เคียงกันที่สุด
-    let bestGroup = null;
-    let minDiff = 999;
-
-    for (let i = 0; i <= pool.length - 4; i++) {
-      const group = pool.slice(i, i + 4);
-      const diff = Math.abs(
-        (levelMap[group[3].skill_level] || 1) - (levelMap[group[0].skill_level] || 1)
-      );
-      if (diff < minDiff) {
-        minDiff = diff;
-        bestGroup = group;
-      }
-    }
-
-    if (!bestGroup) {
-      bestGroup = pool.slice(0, 4);
-    }
-
-    // จัดทีมแบบบาลานซ์: มือ 1 + มือ 4 ปะทะ มือ 2 + มือ 3
-    const teamA1 = bestGroup[0].id;
-    const teamA2 = bestGroup[3].id;
-    const teamB1 = bestGroup[1].id;
-    const teamB2 = bestGroup[2].id;
-
-    try {
-      await supabase.from('matches').insert([{
-        session_id: activeSession.id,
-        team_a_1: teamA1,
-        team_a_2: teamA2,
-        team_b_1: teamB1,
-        team_b_2: teamB2,
-        shuttlecock_id: activeSession.shuttlecock_id || (shuttleList[0]?.id || null),
-        shuttlecocks_used: 1,
-        status: 'playing'
-      }]);
-
-      alert('🏸 จับคู่สำเร็จ 1 คอร์ท!');
-      fetchMatchData();
-    } catch (error) {
-      console.error(error);
-      alert('เกิดข้อผิดพลาดในการจับคู่: ' + error.message);
-    }
-  };
-
   useEffect(() => {
     fetchMatchData();
   }, []);
 
-  // 2. ปรับปรุงลอจิกจับคู่อัตโนมัติ (สุ่มจากคนที่ว่างจริง + เกลี่ยฝีมือ)
   const handleAutoMatch = async () => {
     if (waitingPlayers.length < 4) {
       return alert(`มีคนว่างพร้อมเล่น ${waitingPlayers.length} คน (ต้องการอย่างน้อย 4 คนครับ)`);
     }
 
-    // สลับลำดับแบบสุ่มเล็กน้อยเพื่อไม่ให้ได้หน้าเดิมตลอดเวลา
     let pool = [...waitingPlayers].sort(() => Math.random() - 0.5);
-
-    // เรียงตามฝีมือจาก 4 คนที่เลือกมา
     pool.sort((a, b) => (levelMap[a.skill_level] || 1) - (levelMap[b.skill_level] || 1));
 
-    // หยิบ 4 คนที่ระดับใกล้เคียงกันที่สุด
     let bestGroup = null;
     let minDiff = 999;
 
@@ -192,7 +123,6 @@ const LiveMatchPage = () => {
       bestGroup = pool.slice(0, 4);
     }
 
-    // จัดทีมแบบบาลานซ์: มือ 1 + มือ 4 ปะทะ มือ 2 + มือ 3
     const teamA1 = bestGroup[0].id;
     const teamA2 = bestGroup[3].id;
     const teamB1 = bestGroup[1].id;
@@ -250,14 +180,13 @@ const LiveMatchPage = () => {
     }
   };
 
-  if (isLoading) return <div className="text-center p-12">กำลังโหลดกระดานแข่งขัน...</div>;
-  if (!activeSession) return <div className="text-center p-12">ไม่มีรอบก๊วนเปิดในวันนี้ครับ</div>;
+  if (isLoading) return <div className="text-center p-12 font-sans">กำลังโหลดกระดานแข่งขัน...</div>;
+  if (!activeSession) return <div className="text-center p-12 font-sans">ไม่มีรอบก๊วนเปิดในวันนี้ครับ</div>;
 
   const isOrganizer = session?.user?.id === activeSession.badminton_groups?.organizer_id;
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans pb-24">
-      {/* Header */}
       <div className="bg-[#0f172a] text-white p-6 md:p-8 rounded-3xl shadow-md mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-black mb-1 flex items-center gap-2">
@@ -302,7 +231,6 @@ const LiveMatchPage = () => {
           return (
             <div key={match.id} className={`p-6 rounded-3xl border-2 transition-all ${isPlaying ? 'bg-white border-blue-400 shadow-lg' : 'bg-gray-50 border-gray-200 opacity-90'}`}>
               
-              {/* แถบสถานะด้านบน */}
               <div className="flex justify-between items-center mb-4">
                 <span className={`px-3 py-1 text-xs font-bold rounded-full ${isPlaying ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
                   {isPlaying ? '🔥 กำลังแข่งขัน' : '✅ จบเกมแล้ว'}
@@ -315,7 +243,6 @@ const LiveMatchPage = () => {
                 )}
               </div>
 
-              {/* รายชื่อคู่แข่งขัน */}
               <div className="flex justify-between items-center text-center mb-4">
                 <div className="flex-1 p-3 bg-red-50 rounded-2xl border border-red-100">
                   <div className="font-black text-red-600 text-xs mb-1 uppercase tracking-wider">TEAM A</div>
@@ -330,7 +257,6 @@ const LiveMatchPage = () => {
                 </div>
               </div>
 
-              {/* 🪶 ส่วนจัดการลูกแบด (เลือกยี่ห้อ + เลขลูก + จำนวน) */}
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 mb-4 text-xs space-y-2.5">
                 <div className="font-bold text-slate-700 flex items-center gap-1">
                   <span>🪶 ข้อมูลลูกแบดที่ใช้ในแมตช์นี้:</span>
@@ -338,7 +264,6 @@ const LiveMatchPage = () => {
 
                 {isPlaying && isOrganizer ? (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {/* เลือกยี่ห้อ */}
                     <div>
                       <label className="block text-[10px] text-gray-500 font-bold mb-1">ยี่ห้อลูกแบด</label>
                       <select
@@ -352,7 +277,6 @@ const LiveMatchPage = () => {
                       </select>
                     </div>
 
-                    {/* เลขที่เขียนบนลูก */}
                     <div>
                       <label className="block text-[10px] text-gray-500 font-bold mb-1">เลข/รหัสบนลูก (เช่น 01, A2)</label>
                       <input
@@ -364,7 +288,6 @@ const LiveMatchPage = () => {
                       />
                     </div>
 
-                    {/* จำนวนลูกที่ใช้ */}
                     <div>
                       <label className="block text-[10px] text-gray-500 font-bold mb-1">จำนวนลูกที่ใช้</label>
                       <input
@@ -378,7 +301,6 @@ const LiveMatchPage = () => {
                     </div>
                   </div>
                 ) : (
-                  // แสดงผลตอนจบเกม หรือคนดูทั่วไป
                   <div className="flex flex-wrap items-center justify-between text-gray-600 gap-2 font-medium">
                     <div>
                       <span>ยี่ห้อ: </span>
@@ -397,7 +319,6 @@ const LiveMatchPage = () => {
                 )}
               </div>
 
-              {/* ปุ่มบันทึกผลการแข่งขัน */}
               {isPlaying && isOrganizer && (
                 <div className="flex gap-2">
                   <button 
