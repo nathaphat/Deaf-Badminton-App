@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../logic/supabaseClient';
+import Link from 'next/link';
 
 const MatchHistoryPage = () => {
   const [sessions, setSessions] = useState([]);
@@ -8,7 +9,6 @@ const MatchHistoryPage = () => {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
 
-  // 1. ดึงประวัติรอบที่ปิดแล้วทั้งหมด
   useEffect(() => {
     const fetchClosedSessions = async () => {
       setIsLoadingSessions(true);
@@ -40,7 +40,6 @@ const MatchHistoryPage = () => {
     fetchClosedSessions();
   }, []);
 
-  // 2. ดึงแมตช์ของรอบที่เลือก
   useEffect(() => {
     if (!selectedSessionId) return;
 
@@ -85,13 +84,22 @@ const MatchHistoryPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-4 font-sans pb-24">
-      {/* ส่วนหัว */}
-      <div className="bg-[#0f172a] text-white p-6 md:p-8 rounded-3xl shadow-lg mb-6">
-        <h1 className="text-2xl md:text-3xl font-black mb-1">📜 ประวัติการแข่งขันย้อนหลัง</h1>
-        <p className="text-blue-200 text-xs">ตรวจสอบผลการแข่งขันและรายละเอียดแมตช์ในแต่ละรอบ</p>
+      <div className="bg-[#0f172a] text-white p-6 md:p-8 rounded-3xl shadow-lg mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-black mb-1">📜 ประวัติการแข่งขันย้อนหลัง</h1>
+          <p className="text-blue-200 text-xs">ตรวจสอบผลการแข่งขันและรายละเอียดแมตช์ในแต่ละรอบ</p>
+        </div>
+
+        {/* ปุ่มลัดเปิดดูบิลของรอบที่กำลังเลือก */}
+        {selectedSessionId && (
+          <Link href={`/finance?sessionId=${selectedSessionId}`}>
+            <button className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl shadow-md text-xs sm:text-sm transition-all flex items-center gap-2">
+              <span>🧾 ดูสรุปบิลรอบนี้</span>
+            </button>
+          </Link>
+        )}
       </div>
 
-      {/* เลือกวันที่รอบที่ต้องการดู */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <label className="text-sm font-bold text-gray-700">เลือกรอบวันที่:</label>
         <select
@@ -107,17 +115,17 @@ const MatchHistoryPage = () => {
         </select>
       </div>
 
-      {/* สรุปข้อมูลรอบที่เลือก */}
       {currentSession && (
-        <div className="bg-slate-100 p-4 rounded-2xl mb-6 text-xs text-gray-600 flex flex-wrap gap-4">
-          <div>ก๊วน: <b className="text-gray-800">{currentSession.badminton_groups?.name}</b></div>
-          <div>ค่าสนาม: <b className="text-blue-700">{currentSession.court_fee_per_person || 0} บ./คน</b></div>
-          <div>ลูกแบดหลัก: <b className="text-gray-800">{currentSession.shuttlecock?.brand_name || 'ไม่ได้ระบุ'}</b></div>
-          <div>แมตช์ทั้งหมด: <b className="text-green-700">{sessionMatches.length} แมตช์</b></div>
+        <div className="bg-slate-100 p-4 rounded-2xl mb-6 text-xs text-gray-600 flex flex-wrap justify-between items-center gap-4">
+          <div className="flex flex-wrap gap-4">
+            <div>ก๊วน: <b className="text-gray-800">{currentSession.badminton_groups?.name}</b></div>
+            <div>ค่าสนาม: <b className="text-blue-700">{currentSession.court_fee_per_person || 0} บ./คน</b></div>
+            <div>ลูกแบดหลัก: <b className="text-gray-800">{currentSession.shuttlecock?.brand_name || 'ไม่ได้ระบุ'}</b></div>
+            <div>แมตช์ทั้งหมด: <b className="text-green-700">{sessionMatches.length} แมตช์</b></div>
+          </div>
         </div>
       )}
 
-      {/* รายการแมตช์ทั้งหมดในรอบนั้น */}
       {isLoadingMatches ? (
         <div className="text-center p-8 text-gray-400 text-sm">กำลังโหลดข้อมูลแมตช์...</div>
       ) : sessionMatches.length === 0 ? (
@@ -128,8 +136,6 @@ const MatchHistoryPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sessionMatches.map((m, idx) => (
             <div key={m.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              
-              {/* แถบหัวแมตช์ */}
               <div className="flex justify-between items-center mb-3">
                 <span className="text-xs font-bold text-gray-400">แมตช์ที่ #{idx + 1}</span>
                 <span className={`text-xs font-black px-3 py-1 rounded-full ${
@@ -141,7 +147,6 @@ const MatchHistoryPage = () => {
                 </span>
               </div>
 
-              {/* ทีม A ปะทะ ทีม B */}
               <div className="flex items-center justify-between text-center mb-3 gap-2">
                 <div className={`flex-1 p-3 rounded-2xl ${m.winner === 'A' ? 'bg-red-50 border border-red-200 font-bold' : 'bg-gray-50'}`}>
                   <div className="text-[10px] text-red-600 font-black mb-1">TEAM A</div>
@@ -158,7 +163,6 @@ const MatchHistoryPage = () => {
                 </div>
               </div>
 
-              {/* ข้อมูลลูกแบดที่ใช้ */}
               <div className="pt-2 border-t border-dashed border-gray-100 flex justify-between text-[11px] text-gray-500">
                 <span>🪶 {m.shuttlecock?.brand_name || 'ลูกตามรอบ'}</span>
                 <span>
@@ -166,7 +170,6 @@ const MatchHistoryPage = () => {
                   ใช้ไป <b>{m.shuttlecocks_used || 1}</b> ลูก
                 </span>
               </div>
-
             </div>
           ))}
         </div>
