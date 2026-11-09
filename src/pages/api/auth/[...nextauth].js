@@ -15,23 +15,36 @@ export const authOptions = {
       if (account.provider === "line") {
         console.log("LINE User ID:", user.id);
         console.log("LINE User Name:", user.name);
-        // ลองส่งแค่ user_line_id อย่างเดียวดูก่อนเพื่อทดสอบ
-        const { data, error } = await supabase
+        
+        // 1. ของเดิม: บันทึก/อัปเดตข้อมูลลง profiles (ใช้ upsert จะได้ไม่ Error เวลาคนเดิมล็อกอินซ้ำ)
+        const { error: profileError } = await supabase
           .from('profiles')
-          .insert([
+          .upsert([
             { 
-              user_line_id: user.id, 
+              id: user.id, // ใช้ id เป็น Primary Key ตามปกติ
               display_name: user.name || 'No Name',
               avatar_url: user.image || ''
             }
           ]);
     
-        if (error) {
-          // บรรทัดนี้จะพ่น Error จริงๆ ออกมาใน Vercel Logs
-          console.log("❌ Supabase Insert Error:", error.message);
-          console.log("❌ Error Code:", error.code);
+        if (profileError) {
+          console.log("❌ Supabase Profile Error:", profileError.message);
+        }
+
+        // 📝 2. ส่วนที่เพิ่มใหม่: บันทึกประวัติการเข้าระบบลงตาราง login_logs
+        const { error: logError } = await supabase
+          .from('login_logs')
+          .insert([
+            { 
+              line_id: user.id, 
+              display_name: user.name 
+            }
+          ]);
+
+        if (logError) {
+          console.log("❌ Supabase Login Log Error:", logError.message);
         } else {
-          console.log("✅ Insert Success!");
+          console.log("✅ Login Log Saved Success!");
         }
       }
       return true;
